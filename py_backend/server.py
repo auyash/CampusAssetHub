@@ -139,26 +139,62 @@ def init_db():
             VALUES (?, ?, ?, ?, ?, ?)
         """, students_data)
 
-        # 10 Development boards & 20 USB Cables
+        # 1. ARM Development Boards (14 Units including DB-014 from problem statement)
         cursor.execute("""
             INSERT INTO inventory_items (id, item_code, item_name, category, description, make_model, is_individually_tracked, total_quantity, available_quantity, storage_location)
-            VALUES (1, 'DEV-BOARD-STM32', 'ARM Cortex Development Board', 'Embedded Systems', 'Lab board for hardware security', 'STM32-F407G', 1, 10, 10, 'Lab 204, Cabinet A')
+            VALUES (1, 'DEV-BOARD-STM32', 'ARM Cortex Development Board', 'Embedded Systems', 'Lab board for hardware security & firmware analysis', 'STM32-F407G', 1, 14, 14, 'Lab 204, Cabinet A')
         """)
-        cursor.execute("""
-            INSERT INTO inventory_items (id, item_code, item_name, category, description, make_model, is_individually_tracked, total_quantity, available_quantity, storage_location)
-            VALUES (2, 'USB-C-2M', 'Reusable USB-C Data Cable 2m', 'Accessories', 'High speed shielded cable', 'Standard OEM', 0, 20, 20, 'Lab 204, Drawer 2')
-        """)
-
-        # Add Assets DB-001 through DB-010
-        for i in range(1, 11):
+        for i in range(1, 15):
             pad = f"{i:03d}"
             cursor.execute("""
-                INSERT INTO individual_assets (item_id, asset_id, serial_number, condition, is_issued)
-                VALUES (1, ?, ?, 'USABLE', 0)
+                INSERT INTO individual_assets (item_id, asset_id, serial_number, condition, is_issued, location_notes)
+                VALUES (1, ?, ?, 'USABLE', 0, 'Lab 204, Cabinet A')
             """, (f"DB-{pad}", f"SN-DEV-{pad}"))
 
+        # 2. Lab Forensic Laptops (Individually Tracked - explicit in problem statement)
+        cursor.execute("""
+            INSERT INTO inventory_items (id, item_code, item_name, category, description, make_model, is_individually_tracked, total_quantity, available_quantity, storage_location)
+            VALUES (2, 'LAPTOP-DELL-G15', 'High-Performance Forensic Analysis Laptop', 'Computing Assets', 'Workstation for digital forensics & cryptanalysis', 'Dell G15 Core i7', 1, 5, 5, 'Lab 204, Locker 1')
+        """)
+        for i in range(1, 6):
+            pad = f"{i:03d}"
+            cursor.execute("""
+                INSERT INTO individual_assets (item_id, asset_id, serial_number, condition, is_issued, location_notes)
+                VALUES (2, ?, ?, 'USABLE', 0, 'Lab 204, Locker 1')
+            """, (f"LP-{pad}", f"SN-DELL-{pad}"))
+
+        # 3. Digital Multimeters (Individually Tracked hardware testing)
+        cursor.execute("""
+            INSERT INTO inventory_items (id, item_code, item_name, category, description, make_model, is_individually_tracked, total_quantity, available_quantity, storage_location)
+            VALUES (3, 'DMM-FLUKE-115', 'Digital True-RMS Multimeter', 'Testing Instruments', 'Field multimeter for electrical diagnostics', 'Fluke 115', 1, 4, 4, 'Lab 204, Shelf 2')
+        """)
+        for i in range(1, 5):
+            pad = f"{i:03d}"
+            cursor.execute("""
+                INSERT INTO individual_assets (item_id, asset_id, serial_number, condition, is_issued, location_notes)
+                VALUES (3, ?, ?, 'USABLE', 0, 'Lab 204, Shelf 2')
+            """, (f"MM-{pad}", f"SN-FLK-{pad}"))
+
+        # 4. Reusable USB-C Cables (Quantity-Based reusable item from problem statement)
+        cursor.execute("""
+            INSERT INTO inventory_items (id, item_code, item_name, category, description, make_model, is_individually_tracked, total_quantity, available_quantity, storage_location)
+            VALUES (4, 'USB-C-2M', 'Reusable USB-C Data Cable 2m', 'Accessories', 'High speed shielded cable', 'Standard OEM', 0, 20, 20, 'Lab 204, Drawer 2')
+        """)
+
+        # 5. Hardware Interfacing Adapters (Quantity-Based - explicitly mentioned in prompt)
+        cursor.execute("""
+            INSERT INTO inventory_items (id, item_code, item_name, category, description, make_model, is_individually_tracked, total_quantity, available_quantity, storage_location)
+            VALUES (5, 'ADAPTER-USB-SERIAL', 'USB to TTL UART Serial Converter Adapters', 'Accessories', 'Hardware communication bridge adapter', 'CP2102 Bridge', 0, 15, 15, 'Lab 204, Drawer 3')
+        """)
+
+        # 6. Breadboard Jumper Wire Sets (Quantity-Based reusable)
+        cursor.execute("""
+            INSERT INTO inventory_items (id, item_code, item_name, category, description, make_model, is_individually_tracked, total_quantity, available_quantity, storage_location)
+            VALUES (6, 'JUMPER-WIRES-65', 'Breadboard Jumper Wire Ribbon Set (65 pcs)', 'Accessories', 'Male-to-Male prototyping jumper wires', 'Standard Ribbons', 0, 25, 25, 'Lab 204, Drawer 4')
+        """)
+
         conn.commit()
-        print("[DB] Seeding complete! 3 Students, 10 Development Boards, 20 USB Cables initialized.")
+        print("[DB] Seeding complete! Expanded inventory (Boards DB-001..DB-014, Laptops LP-001..LP-005, Multimeters, USB Cables, Adapters, Jumper Wires) initialized.")
     conn.close()
 
 # =====================================================================
@@ -377,10 +413,34 @@ class SecureInventoryHandler(http.server.BaseHTTPRequestHandler):
                 purpose = data.get("purpose", "Lab practical")
                 issuing_staff = data.get("issuing_staff", "Coordinator")
 
-                cursor.execute("SELECT * FROM students WHERE id = ?", (student_id,))
-                student = cursor.fetchone()
+                # Student resolution: Support either existing student_id OR dynamic manual student details input
+                student_name = data.get("student_name", "").strip()
+                student_enrolment = data.get("student_enrolment", "").strip().upper()
+                student_prog = data.get("student_programme", "M.Sc. DFIS").strip()
+                student_sem = int(data.get("student_semester", 1))
+                student_contact = data.get("student_contact", "9876543210").strip()
+
+                if student_enrolment and student_name:
+                    cursor.execute("SELECT * FROM students WHERE enrolment_no = ?", (student_enrolment,))
+                    existing = cursor.fetchone()
+                    if existing:
+                        student = existing
+                        student_id = student["id"]
+                    else:
+                        email = f"{student_enrolment.lower()}@nfsu.ac.in"
+                        cursor.execute("""
+                            INSERT INTO students (enrolment_no, name, programme, semester, email, contact_no)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                        """, (student_enrolment, student_name, student_prog, student_sem, email, student_contact))
+                        student_id = cursor.lastrowid
+                        cursor.execute("SELECT * FROM students WHERE id = ?", (student_id,))
+                        student = cursor.fetchone()
+                else:
+                    cursor.execute("SELECT * FROM students WHERE id = ?", (student_id,))
+                    student = cursor.fetchone()
+
                 if not student:
-                    return self._send_json(400, {"success": False, "error": f"Student ID {student_id} not registered."})
+                    return self._send_json(400, {"success": False, "error": "Please provide student details (Name and Enrolment Number are required)."})
 
                 cursor.execute("SELECT * FROM inventory_items WHERE id = ?", (item_id,))
                 item = cursor.fetchone()

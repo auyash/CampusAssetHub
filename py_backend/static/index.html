@@ -162,11 +162,62 @@
         </div>
 
         <form id="issueForm" onsubmit="handleIssueSubmit(event)" class="space-y-4">
-          <div>
-            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Select Student</label>
-            <select id="issueStudentSelect" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none" required>
-              <!-- Populated via JS -->
-            </select>
+          <!-- STUDENT SELECTION / DIRECT INPUT TOGGLE -->
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-3">
+            <div class="flex justify-between items-center">
+              <label class="block text-xs font-bold text-slate-700 uppercase">Student Identification</label>
+              <div class="flex items-center gap-3 text-xs font-medium">
+                <label class="flex items-center gap-1 cursor-pointer">
+                  <input type="radio" name="studentInputMode" value="existing" checked onchange="toggleStudentMode('existing')">
+                  <span>Registered List</span>
+                </label>
+                <label class="flex items-center gap-1 cursor-pointer">
+                  <input type="radio" name="studentInputMode" value="new" onchange="toggleStudentMode('new')">
+                  <span>Enter New Student</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Existing Student Dropdown -->
+            <div id="existingStudentBox">
+              <select id="issueStudentSelect" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                <!-- Populated via JS -->
+              </select>
+            </div>
+
+            <!-- Manual Student Details Inputs -->
+            <div id="newStudentBox" class="hidden space-y-2.5 pt-1">
+              <div class="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 uppercase mb-0.5">Enrolment Number *</label>
+                  <input type="text" id="manualEnrolment" placeholder="e.g. NFSU2026DFIS014" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs font-mono font-bold uppercase">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 uppercase mb-0.5">Full Student Name *</label>
+                  <input type="text" id="manualName" placeholder="e.g. Shreya Verma" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs font-medium">
+                </div>
+              </div>
+              <div class="grid grid-cols-3 gap-2.5">
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 uppercase mb-0.5">Programme</label>
+                  <select id="manualProgramme" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs">
+                    <option value="M.Sc. DFIS">M.Sc. DFIS</option>
+                    <option value="M.Tech. CS">M.Tech. CS</option>
+                    <option value="M.Tech. AIDS">M.Tech. AIDS</option>
+                    <option value="B.Tech.-M.Tech. CS">B.Tech.-M.Tech. CS</option>
+                    <option value="M.Sc. CS">M.Sc. CS</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 uppercase mb-0.5">Semester</label>
+                  <input type="number" id="manualSemester" value="1" min="1" max="8" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 uppercase mb-0.5">Contact No.</label>
+                  <input type="text" id="manualContact" value="9876543210" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs">
+                </div>
+              </div>
+            </div>
           </div>
 
           <div>
@@ -699,26 +750,61 @@
       }
     }
 
+    function toggleStudentMode(mode) {
+      if (mode === 'existing') {
+        document.getElementById('existingStudentBox').classList.remove('hidden');
+        document.getElementById('newStudentBox').classList.add('hidden');
+      } else {
+        document.getElementById('existingStudentBox').classList.add('hidden');
+        document.getElementById('newStudentBox').classList.remove('hidden');
+      }
+    }
+
     // Submit Issue
     async function handleIssueSubmit(e) {
       e.preventDefault();
       const itemId = parseInt(document.getElementById('issueItemSelect').value);
-      const studentId = parseInt(document.getElementById('issueStudentSelect').value);
       const purpose = document.getElementById('issuePurpose').value;
-      const assetId = itemId === 1 ? document.getElementById('issueAssetSelect').value : null;
-      const quantity = itemId === 1 ? 1 : parseInt(document.getElementById('issueQuantity').value);
+      const selectedItem = cachedInventory && cachedInventory.items.find(i => i.id === itemId);
+      const isTracked = selectedItem ? selectedItem.is_individually_tracked : false;
+      const assetId = isTracked ? document.getElementById('issueAssetSelect').value : null;
+      const quantity = isTracked ? 1 : parseInt(document.getElementById('issueQuantity').value);
+
+      const isNewStudent = document.querySelector('input[name="studentInputMode"]:checked').value === 'new';
+
+      let payload = {
+        item_id: itemId,
+        asset_id: assetId,
+        quantity: quantity,
+        purpose: purpose,
+        issuing_staff: 'Coordinator Admin'
+      };
+
+      if (isNewStudent) {
+        const enrol = document.getElementById('manualEnrolment').value.trim();
+        const name = document.getElementById('manualName').value.trim();
+        const prog = document.getElementById('manualProgramme').value;
+        const sem = parseInt(document.getElementById('manualSemester').value);
+        const contact = document.getElementById('manualContact').value.trim();
+
+        if (!enrol || !name) {
+          alert('Please enter Student Enrolment Number and Name');
+          return;
+        }
+
+        payload.student_enrolment = enrol;
+        payload.student_name = name;
+        payload.student_programme = prog;
+        payload.student_semester = sem;
+        payload.student_contact = contact;
+      } else {
+        payload.student_id = parseInt(document.getElementById('issueStudentSelect').value);
+      }
 
       const res = await fetch('/api/loans/issue', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          student_id: studentId,
-          item_id: itemId,
-          asset_id: assetId,
-          quantity: quantity,
-          purpose: purpose,
-          issuing_staff: 'Coordinator Admin'
-        })
+        body: JSON.stringify(payload)
       });
 
       const json = await res.json();
