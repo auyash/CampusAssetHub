@@ -60,7 +60,7 @@
       <button onclick="switchTab('tab-student')" id="nav-tab-student" class="tab-btn role-student py-3 px-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap">
         <i class="fa-solid fa-user-check"></i> My Borrowed Items
       </button>
-      <button onclick="switchTab('tab-security')" id="nav-tab-security" class="tab-btn role-all py-3 px-3 text-sm font-medium border-b-2 border-transparent text-emerald-600 hover:text-emerald-700 flex items-center gap-2 whitespace-nowrap">
+      <button onclick="switchTab('tab-security')" id="nav-tab-security" class="tab-btn role-coord py-3 px-3 text-sm font-medium border-b-2 border-transparent text-emerald-600 hover:text-emerald-700 flex items-center gap-2 whitespace-nowrap">
         <i class="fa-solid fa-shield-halved text-emerald-500"></i> Security Showcase
       </button>
       <button onclick="switchTab('tab-audit')" id="nav-tab-audit" class="tab-btn role-coord py-3 px-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap">
@@ -876,7 +876,7 @@
     // Switch Tab
     function switchTab(tabId) {
       // Prevent students from bypassing to coordinator tabs
-      if (currentRole === 'STUDENT' && tabId !== 'tab-student' && tabId !== 'tab-security') {
+      if (currentRole === 'STUDENT' && tabId !== 'tab-student') {
         tabId = 'tab-student';
       }
 
@@ -1251,6 +1251,7 @@
       const forgedInput = document.getElementById('idorForgedStudentId');
       if (targetInput) targetInput.value = loanId;
       if (forgedInput) forgedInput.value = forgedId;
+      setRole('COORDINATOR');
       switchTab('tab-security');
       if (targetInput) targetInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
       alert(`[IDOR Test Ready]\nTarget Loan ID: #${loanId} (Owned by Student ID #${studentId})\nForged Session: Student ID #${forgedId}\n\nNavigated to Security Showcase. Click "Execute Live IDOR Attack" to run the test!`);
