@@ -456,6 +456,13 @@ class SecureInventoryHandler(http.server.BaseHTTPRequestHandler):
             elif path == "/api/audit-logs":
                 cursor.execute("SELECT * FROM audit_logs ORDER BY id DESC LIMIT 50")
                 logs = [dict(row) for row in cursor.fetchall()]
+                for l in logs:
+                    try:
+                        dt = datetime.datetime.fromisoformat(l['timestamp'])
+                        local_dt = dt.astimezone()
+                        l['local_time'] = local_dt.strftime("%Y-%m-%d %I:%M:%S %p")
+                    except Exception:
+                        l['local_time'] = l.get('timestamp')
                 integrity = verify_audit_ledger()
                 self._send_json(200, {"success": True, "data": {"logs": logs, "integrityCheck": integrity}})
 

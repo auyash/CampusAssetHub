@@ -1566,6 +1566,49 @@
       }
     }
 
+    // Format audit timestamp nicely showing local time + canonical UTC reference
+    function formatAuditTimestamp(ts) {
+      if (!ts) return '-';
+      try {
+        let iso = ts;
+        if (!iso.includes('Z') && !iso.includes('+') && !iso.includes('-') && iso.length === 19) {
+          iso = iso.replace(' ', 'T') + 'Z';
+        } else if (!iso.includes('Z') && !iso.includes('+') && iso.includes(' ')) {
+          iso = iso.replace(' ', 'T') + 'Z';
+        }
+        const d = new Date(iso);
+        if (isNaN(d.getTime())) return ts;
+
+        const dateStr = d.toLocaleDateString(undefined, {
+          year: 'numeric',
+          month: 'short',
+          day: '2-digit'
+        });
+        const timeStr = d.toLocaleTimeString(undefined, {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: true
+        });
+
+        let tzName = '';
+        try {
+          tzName = Intl.DateTimeFormat(undefined, { timeZoneName: 'short' }).formatToParts(d).find(p => p.type === 'timeZoneName')?.value || '';
+        } catch (e) {}
+
+        const utcPart = ts.split('.')[0].replace('T', ' ');
+
+        return `
+          <div class="leading-tight">
+            <div class="font-semibold text-slate-800 text-xs whitespace-nowrap">${dateStr}, ${timeStr} ${tzName ? `<span class="text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-200 px-1 py-0.5 rounded font-bold">${tzName}</span>` : ''}</div>
+            <div class="text-[10px] text-slate-400 font-mono mt-0.5" title="Canonical UTC timestamp stored in hash chain">UTC: ${utcPart}Z</div>
+          </div>
+        `;
+      } catch (err) {
+        return ts;
+      }
+    }
+
     // Load Audit Ledger
     async function loadAuditLogs() {
       const res = await fetch('/api/audit-logs');
@@ -1575,7 +1618,7 @@
       const tbody = document.getElementById('auditTableBody');
       tbody.innerHTML = json.data.logs.map(log => `
         <tr class="hover:bg-slate-50 transition">
-          <td class="py-2.5 px-3 text-slate-500">${log.timestamp.replace('T', ' ').substring(0, 19)}</td>
+          <td class="py-2.5 px-3">${formatAuditTimestamp(log.timestamp)}</td>
           <td class="py-2.5 px-3"><span class="font-bold text-slate-800">${log.actor_id}</span> <span class="text-[10px] bg-slate-100 text-slate-600 px-1 py-0.5 rounded">${log.actor_role}</span></td>
           <td class="py-2.5 px-3 font-bold text-indigo-700">${log.action}</td>
           <td class="py-2.5 px-3 text-slate-600">${log.target_entity}</td>
