@@ -91,8 +91,8 @@ The project was engineered with a strict 3-tier division of labor across team me
 - **Renewal Approvals Queue:** Dedicated dashboard for reviewing student renewal submissions with 1-click `Approve (+15 Days)` and `Reject` actions.
 
 ### 5.2. Student Self-Service Portal & Profile Switcher
-- **Dynamic Student Profile Switcher:** Dropdown allowing switching between registered students (e.g. *Aarav Sharma, Diya Patel, Rohan Mehta* or any newly registered student). Automatically updates Enrolment Number and Programme metadata.
-- **Role-Based UI Isolation:** In Student Portal mode, coordinator-only navigation tabs (Live Inventory, Issue Desk, Returns, Renewal Approvals, Audit Ledger) and stock summary metrics are hidden to present a student-facing interface.
+- **Dynamic Student Profile Switcher & Multi-Programme Support:** Dropdown allowing switching between registered students across diverse academic programmes (e.g. *B.Tech. CSE, B.Tech. Cyber Security, M.Sc. DFIS, M.Tech. CS*). Selecting or adding a student instantly updates the top navigation subtitle, profile badge, semester tags, and programme metadata across the entire portal.
+- **Role-Based UI Isolation:** In Student Portal mode, coordinator-only navigation tabs (Live Inventory, Issue Desk, Returns, Renewal Approvals, Audit Ledger) and stock summary metrics are hidden to present a clean, isolated student interface.
 - **Active Loans View:** Color-coded card listing all borrowed items with exact return dates and active countdown badges.
 - **Renewal Request Flow:** Modal allowing students to submit renewal justifications, correctly maintaining `PENDING` status until authorized.
 

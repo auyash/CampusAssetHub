@@ -167,7 +167,7 @@ CampusAssetHub implements proactive defensive coding patterns addressing the **O
 ### ⏱️ Phase 3: Student Portal, Profile Switcher & Renewal Mediation (30 Seconds)
 1. In the top-right header, toggle to **Student Portal**.
 2. **Demonstrate Role-Based UI Isolation:** Coordinator-only tabs (Live Inventory, Issue Desk, Returns, Renewal Approvals, Audit Ledger) and stock summary counters are hidden in student view.
-3. **Demonstrate Dynamic Student Profile Switcher:** Use the dropdown to switch between registered students (e.g., *Aarav Sharma, Diya Patel, Rohan Mehta*) and show how active loans and metadata update immediately.
+3. **Demonstrate Dynamic Student Profile Switcher & Multi-Programme Support:** Use the dropdown to switch between registered students across programmes (e.g., *B.Tech. CSE, B.Tech. Cyber Security, M.Sc. DFIS*). Point out how the top header subtitle, profile badge, semester tags, and active loans dynamically update to reflect the student's exact programme (e.g., *B.Tech. CSE Profile* vs *M.Sc. DFIS Profile*).
 4. On an active loan, click **Request 15-Day Renewal**, input a justification (`Extending hardware testing verification`), and submit.
 5. **Key Policy Demonstration:**
    - Direct the panel's attention to the loan due date: **it remains unchanged**. The request status reflects `PENDING` coordinator review.

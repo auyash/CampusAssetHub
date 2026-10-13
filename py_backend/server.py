@@ -580,12 +580,15 @@ class SecureInventoryHandler(http.server.BaseHTTPRequestHandler):
                     "success": True,
                     "data": {
                         "loan_id": loan_id,
+                        "student_id": student["id"],
                         "student": student["name"],
+                        "student_enrolment": student["enrolment_no"],
+                        "student_programme": student["programme"],
                         "item": item["item_name"],
                         "asset_id": asset_id,
                         "quantity": quantity,
                         "due_date": due_str,
-                        "message": f"Successfully issued. Due date set to 15 calendar days ({due_str[:10]})."
+                        "message": f"Successfully issued to {student['name']} ({student['programme']}). Due date set to 15 calendar days ({due_str[:10]})."
                     }
                 })
 

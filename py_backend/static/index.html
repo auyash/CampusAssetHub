@@ -23,7 +23,7 @@
         </div>
         <div>
           <h1 class="text-xl font-bold tracking-tight">NFSU Department Asset Management</h1>
-          <p class="text-xs text-indigo-200">National Forensic Sciences University • M.Sc. DFIS</p>
+          <p id="topHeaderSubtitle" class="text-xs text-indigo-200">National Forensic Sciences University • Department Asset Management</p>
         </div>
       </div>
 
@@ -107,7 +107,7 @@
         <div class="p-4 border-b border-slate-100 flex justify-between items-center flex-wrap gap-3">
           <div>
             <h2 class="text-lg font-bold text-slate-900">Department Equipment Catalog</h2>
-            <p class="text-sm text-slate-500">M.Sc. DFIS Laboratory Inventory</p>
+            <p class="text-sm text-slate-500">Academic Department Laboratory Inventory & Assets</p>
           </div>
           <div class="flex items-center gap-2">
             <button onclick="openAddItemModal()" class="text-sm bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 shadow">
@@ -192,7 +192,7 @@
               <div class="grid grid-cols-2 gap-2.5">
                 <div>
                   <label class="block text-[11px] font-bold text-slate-600 uppercase mb-0.5">Enrolment Number *</label>
-                  <input type="text" id="manualEnrolment" placeholder="e.g. NFSU2026DFIS014" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs font-mono font-bold uppercase">
+                  <input type="text" id="manualEnrolment" placeholder="e.g. NFSU2026BT001 / NFSU2026DFIS014" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs font-mono font-bold uppercase">
                 </div>
                 <div>
                   <label class="block text-[11px] font-bold text-slate-600 uppercase mb-0.5">Full Student Name *</label>
@@ -203,10 +203,12 @@
                 <div>
                   <label class="block text-[11px] font-bold text-slate-600 uppercase mb-0.5">Programme</label>
                   <select id="manualProgramme" class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs">
+                    <option value="B.Tech. CSE">B.Tech. CSE</option>
+                    <option value="B.Tech. Cyber Security">B.Tech. Cyber Security</option>
+                    <option value="B.Tech.-M.Tech. CS">B.Tech.-M.Tech. CS</option>
                     <option value="M.Sc. DFIS">M.Sc. DFIS</option>
                     <option value="M.Tech. CS">M.Tech. CS</option>
-                    <option value="M.Tech. AIDS">M.Tech. AIDS</option>
-                    <option value="B.Tech.-M.Tech. CS">B.Tech.-M.Tech. CS</option>
+                    <option value="M.Tech. Cyber Security">M.Tech. Cyber Security</option>
                     <option value="M.Sc. CS">M.Sc. CS</option>
                   </select>
                 </div>
@@ -244,7 +246,7 @@
 
           <div>
             <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Purpose / Lab Subject</label>
-            <input type="text" id="issuePurpose" value="Embedded Security Practical (DFIS103)" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none" required>
+            <input type="text" id="issuePurpose" value="Hardware Lab Practical / Academic Project" placeholder="e.g. Hardware Security Practical / Academic Project" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none" required>
           </div>
 
           <!-- AUTOMATIC 15-DAY NOTICE -->
@@ -307,7 +309,7 @@
         <div class="flex justify-between items-center flex-wrap gap-4">
           <div class="space-y-1">
             <div class="flex items-center gap-2">
-              <span class="bg-blue-500 text-xs uppercase px-2.5 py-1 rounded font-bold tracking-wider">Student Profile</span>
+              <span id="studentProfileBadge" class="bg-blue-500 text-xs uppercase px-2.5 py-1 rounded font-bold tracking-wider">Student Profile</span>
               <span class="text-xs text-blue-200">Switch active student view:</span>
             </div>
             <div class="flex items-center gap-3">
@@ -315,7 +317,7 @@
                 <!-- Dynamically populated with all students in DB -->
               </select>
             </div>
-            <p id="studentBannerMeta" class="text-xs text-blue-200 pt-0.5">Enrolment: NFSU2026DFIS001 | Programme: M.Sc. DFIS (Sem 1)</p>
+            <p id="studentBannerMeta" class="text-xs text-blue-200 pt-0.5 font-medium">Loading profile details...</p>
           </div>
           <div class="text-right text-xs text-blue-200">
             <i class="fa-solid fa-shield text-emerald-400 mr-1"></i> IDOR Protected Session
@@ -324,7 +326,10 @@
       </div>
 
       <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <h3 class="text-md font-bold text-slate-900 mb-3">My Active Borrowed Equipment</h3>
+        <div class="flex justify-between items-center mb-3">
+          <h3 id="studentLoansHeading" class="text-md font-bold text-slate-900">Active Borrowed Equipment</h3>
+          <span id="studentProgrammeTag" class="text-xs bg-indigo-50 text-indigo-700 font-bold px-2.5 py-1 rounded-full border border-indigo-200">Programme: Loading...</span>
+        </div>
         <div id="studentLoansList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- Rendered via JS -->
         </div>
@@ -644,6 +649,11 @@
         document.querySelectorAll('.role-student').forEach(el => el.classList.add('hidden'));
         document.getElementById('coordinatorMetricsBanner').classList.remove('hidden');
         
+        const topSub = document.getElementById('topHeaderSubtitle');
+        if (topSub) {
+          topSub.innerText = "National Forensic Sciences University • Department Asset Management";
+        }
+
         switchTab('tab-stock');
       } else {
         document.getElementById('btnRoleStudent').className = "px-4 py-1.5 rounded-lg text-sm font-semibold transition-all bg-indigo-600 text-white shadow";
@@ -654,6 +664,12 @@
         document.querySelectorAll('.role-student').forEach(el => el.classList.remove('hidden'));
         document.getElementById('coordinatorMetricsBanner').classList.add('hidden');
         
+        const current = cachedStudents && cachedStudents.find(s => s.id === activeStudentId);
+        const topSub = document.getElementById('topHeaderSubtitle');
+        if (topSub) {
+          topSub.innerText = current ? `National Forensic Sciences University • Student Portal (${current.programme})` : `National Forensic Sciences University • Student Portal`;
+        }
+
         switchTab('tab-student');
       }
     }
@@ -809,7 +825,9 @@
       if (json.success) {
         cachedStudents = json.data;
         const select = document.getElementById('issueStudentSelect');
-        select.innerHTML = cachedStudents.map(s => `<option value="${s.id}">${s.name} (${s.enrolment_no})</option>`).join('');
+        if (select) {
+          select.innerHTML = cachedStudents.map(s => `<option value="${s.id}">${s.name} (${s.enrolment_no} • ${s.programme})</option>`).join('');
+        }
       }
     }
 
@@ -895,6 +913,11 @@
       const json = await res.json();
       if (json.success) {
         alert(json.data.message);
+        if (json.data && json.data.student_id) {
+          activeStudentId = json.data.student_id;
+        }
+        await loadStudents();
+        await loadInventory();
         switchTab('tab-stock');
       } else {
         alert('Error: ' + json.error);
@@ -1028,38 +1051,75 @@
 
     let activeStudentId = 1;
 
+    // Dynamically update all Student Profile UI elements
+    function updateStudentProfileDisplay(student) {
+      if (!student) return;
+      const metaEl = document.getElementById('studentBannerMeta');
+      if (metaEl) {
+        metaEl.innerText = `Enrolment: ${student.enrolment_no} | Programme: ${student.programme} (Sem ${student.semester})`;
+      }
+      const tagEl = document.getElementById('studentProgrammeTag');
+      if (tagEl) {
+        tagEl.innerText = `Programme: ${student.programme} (Semester ${student.semester})`;
+      }
+      const badgeEl = document.getElementById('studentProfileBadge');
+      if (badgeEl) {
+        badgeEl.innerText = `${student.programme} Profile`;
+      }
+      if (currentRole === 'STUDENT') {
+        const topSub = document.getElementById('topHeaderSubtitle');
+        if (topSub) {
+          topSub.innerText = `National Forensic Sciences University • Student Portal (${student.programme})`;
+        }
+      }
+    }
+
     // Switch Active Student
     function changeActiveStudent() {
       const select = document.getElementById('activeStudentSelect');
       activeStudentId = parseInt(select.value);
       const student = cachedStudents.find(s => s.id === activeStudentId);
-      if (student) {
-        document.getElementById('studentBannerMeta').innerText = `Enrolment: ${student.enrolment_no} | Programme: ${student.programme} (Sem ${student.semester})`;
-      }
+      updateStudentProfileDisplay(student);
       loadStudentLoans();
     }
 
     function populateActiveStudentSelect() {
       const select = document.getElementById('activeStudentSelect');
       if (cachedStudents && cachedStudents.length > 0) {
-        select.innerHTML = cachedStudents.map(s => `<option value="${s.id}" ${s.id === activeStudentId ? 'selected' : ''}>${s.name} (${s.enrolment_no})</option>`).join('');
-        const current = cachedStudents.find(s => s.id === activeStudentId);
-        if (current) {
-          document.getElementById('studentBannerMeta').innerText = `Enrolment: ${current.enrolment_no} | Programme: ${current.programme} (Sem ${current.semester})`;
+        if (!cachedStudents.some(s => s.id === activeStudentId)) {
+          activeStudentId = cachedStudents[0].id;
         }
+        select.innerHTML = cachedStudents.map(s => `<option value="${s.id}" ${s.id === activeStudentId ? 'selected' : ''}>${s.name} (${s.enrolment_no} • ${s.programme})</option>`).join('');
+        const current = cachedStudents.find(s => s.id === activeStudentId);
+        updateStudentProfileDisplay(current);
       }
     }
 
     // Load Student Loans
     async function loadStudentLoans() {
+      // Always fetch latest student records so new B.Tech students appear immediately
+      try {
+        const sRes = await fetch('/api/students');
+        const sJson = await sRes.json();
+        if (sJson.success && sJson.data) {
+          cachedStudents = sJson.data;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+
       populateActiveStudentSelect();
+      const current = cachedStudents.find(s => s.id === activeStudentId);
+      updateStudentProfileDisplay(current);
+
       const res = await fetch(`/api/loans?studentId=${activeStudentId}`);
       const json = await res.json();
       if (!json.success) return;
 
       const container = document.getElementById('studentLoansList');
       if (json.data.length === 0) {
-        container.innerHTML = `<div class="col-span-2 text-center py-8 text-slate-400 text-sm">No items currently issued to this student account.</div>`;
+        const desc = current ? `${current.name} (${current.programme})` : 'this student account';
+        container.innerHTML = `<div class="col-span-2 text-center py-8 text-slate-400 text-sm">No items currently issued to ${desc}.</div>`;
         return;
       }
 
