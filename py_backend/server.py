@@ -672,7 +672,55 @@ class SecureInventoryHandler(http.server.BaseHTTPRequestHandler):
                         "message": "Security Exception: Unauthorized fields detected (status: APPROVED is coordinator-only)."
                     })
 
-            else:
+            # -----------------------------------------------------------------
+            # 6. ADD NEW INVENTORY ITEM (Coordinator Dynamic Input)
+            # -----------------------------------------------------------------
+            elif path == "/api/inventory/add":
+                item_code = data.get("item_code", "").strip().upper()
+                item_name = data.get("item_name", "").strip()
+                category = data.get("category", "General Hardware").strip()
+                description = data.get("description", "").strip()
+                make_model = data.get("make_model", "").strip()
+                storage_location = data.get("storage_location", "Main Lab").strip()
+                is_tracked = 1 if data.get("is_individually_tracked") else 0
+                qty = int(data.get("quantity", 1))
+
+                if not item_code or not item_name:
+                    return self._send_json(400, {"success": False, "error": "Item code and item name are required."})
+                if qty < 1:
+                    return self._send_json(400, {"success": False, "error": "Quantity must be at least 1."})
+
+                # Check if item code already exists
+                cursor.execute("SELECT id FROM inventory_items WHERE item_code = ?", (item_code,))
+                if cursor.fetchone():
+                    return self._send_json(400, {"success": False, "error": f"Item code {item_code} already exists."})
+
+                cursor.execute("""
+                    INSERT INTO inventory_items (item_code, item_name, category, description, make_model, is_individually_tracked, total_quantity, available_quantity, storage_location)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (item_code, item_name, category, description, make_model, is_tracked, qty, qty, storage_location))
+                new_item_id = cursor.lastrowid
+
+                # If individually tracked, generate unique asset IDs (e.g. CODE-001 to CODE-00X)
+                if is_tracked:
+                    asset_prefix = data.get("asset_prefix", item_code[:4]).strip().upper()
+                    for i in range(1, qty + 1):
+                        asset_tag = f"{asset_prefix}-{i:03d}"
+                        cursor.execute("""
+                            INSERT INTO individual_assets (item_id, asset_id, serial_number, condition, is_issued, location_notes)
+                            VALUES (?, ?, ?, 'USABLE', 0, ?)
+                        """, (new_item_id, asset_tag, f"SN-{asset_tag}", storage_location))
+
+                record_audit_log(cursor, actor_id, "COORDINATOR", "ADD_NEW_ITEM", f"Item #{new_item_id}", {
+                    "item_code": item_code, "item_name": item_name, "quantity": qty, "is_tracked": is_tracked
+                }, client_ip)
+
+                conn.commit()
+                return self._send_json(201, {
+                    "success": True,
+                    "message": f"Successfully registered new equipment: {item_name} ({qty} units).",
+                    "data": {"item_id": new_item_id, "item_code": item_code, "item_name": item_name, "quantity": qty}
+                })
                 self._send_json(404, {"success": False, "error": "Endpoint not found"})
 
         except Exception as e:

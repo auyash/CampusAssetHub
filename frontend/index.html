@@ -109,9 +109,14 @@
             <h2 class="text-lg font-bold text-slate-900">Department Equipment Catalog</h2>
             <p class="text-sm text-slate-500">M.Sc. DFIS Laboratory Inventory</p>
           </div>
-          <button onclick="loadInventory()" class="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-medium transition">
-            <i class="fa-solid fa-arrows-rotate mr-1"></i> Refresh Stock
-          </button>
+          <div class="flex items-center gap-2">
+            <button onclick="openAddItemModal()" class="text-sm bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 shadow">
+              <i class="fa-solid fa-plus"></i> Add Equipment / Stock
+            </button>
+            <button onclick="loadInventory()" class="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-medium transition">
+              <i class="fa-solid fa-arrows-rotate mr-1"></i> Refresh Stock
+            </button>
+          </div>
         </div>
 
         <div class="overflow-x-auto">
@@ -419,6 +424,84 @@
     </div>
   </div>
 
+  <!-- ADD EQUIPMENT / NEW STOCK MODAL -->
+  <div id="addItemModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-plus-circle text-indigo-600"></i> Add New Equipment / Stock
+        </h3>
+        <button onclick="closeAddItemModal()" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+      </div>
+      <p class="text-xs text-slate-500 mb-4">Register new lab equipment or restock bulk accessories with mandatory location tracking.</p>
+      
+      <form onsubmit="handleAddItemSubmit(event)" class="space-y-3.5">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Item Code</label>
+            <input type="text" id="newCode" placeholder="e.g. RPI-4B-8GB" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm uppercase font-mono font-bold" required>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Category</label>
+            <select id="newCategory" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm">
+              <option value="Embedded Systems">Embedded Systems</option>
+              <option value="Forensic Hardware">Forensic Hardware</option>
+              <option value="Network Equipment">Network Equipment</option>
+              <option value="Accessories">Accessories / Cables</option>
+              <option value="General Lab Gear">General Lab Gear</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Equipment Name</label>
+          <input type="text" id="newName" placeholder="e.g. Raspberry Pi 4 Model B (8GB)" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm font-medium" required>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Make / Model</label>
+            <input type="text" id="newModel" placeholder="e.g. Broadcom BCM2711" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Storage Location</label>
+            <input type="text" id="newLocation" placeholder="e.g. Lab 204, Cabinet C" value="Lab 204, Cabinet C" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm" required>
+          </div>
+        </div>
+
+        <div class="border-t border-b border-slate-100 py-3 space-y-2">
+          <label class="block text-xs font-bold text-slate-700 uppercase">Tracking Classification</label>
+          <div class="flex items-center gap-4 text-xs font-medium">
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="radio" name="newTrackingType" value="tracked" checked onchange="toggleTrackedFields(true)">
+              <span>Individually Tracked (Unique Asset IDs)</span>
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="radio" name="newTrackingType" value="bulk" onchange="toggleTrackedFields(false)">
+              <span>Bulk Quantity (Reusable)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Total Quantity</label>
+            <input type="number" id="newQty" min="1" max="100" value="5" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm font-bold" required>
+          </div>
+          <div id="prefixContainer">
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Asset ID Prefix</label>
+            <input type="text" id="newPrefix" placeholder="e.g. RPI" value="RPI" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm uppercase font-mono font-bold">
+          </div>
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button type="button" onclick="closeAddItemModal()" class="w-1/2 bg-slate-100 text-slate-700 font-bold py-2.5 rounded-lg text-sm">Cancel</button>
+          <button type="submit" class="w-1/2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg text-sm shadow">Save & Register Equipment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- FOOTER -->
   <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-500">
     Designed for NFSU Academic Department Asset & Equipment Management • Secure Coding Standard
@@ -518,12 +601,68 @@
         `).join('');
 
         // Populate Issue Selectors
+        const itemSelect = document.getElementById('issueItemSelect');
+        itemSelect.innerHTML = items.map(i => `<option value="${i.id}">${i.item_name} (${i.is_individually_tracked ? 'Tracked Asset' : 'Bulk Quantity'})</option>`).join('');
+
         const assetSelect = document.getElementById('issueAssetSelect');
         const availableAssets = assets.filter(a => !a.is_issued && a.condition === 'USABLE');
         assetSelect.innerHTML = availableAssets.map(a => `<option value="${a.asset_id}">${a.asset_id} (Available)</option>`).join('');
 
+        handleItemSelectChange();
+
       } catch (err) {
         console.error(err);
+      }
+    }
+
+    // Modal Controls for Adding Equipment
+    function openAddItemModal() {
+      document.getElementById('addItemModal').classList.remove('hidden');
+    }
+
+    function closeAddItemModal() {
+      document.getElementById('addItemModal').classList.add('hidden');
+    }
+
+    function toggleTrackedFields(isTracked) {
+      const container = document.getElementById('prefixContainer');
+      if (isTracked) container.classList.remove('hidden');
+      else container.classList.add('hidden');
+    }
+
+    async function handleAddItemSubmit(e) {
+      e.preventDefault();
+      const code = document.getElementById('newCode').value.trim();
+      const name = document.getElementById('newName').value.trim();
+      const category = document.getElementById('newCategory').value;
+      const model = document.getElementById('newModel').value.trim();
+      const location = document.getElementById('newLocation').value.trim();
+      const isTracked = document.querySelector('input[name="newTrackingType"]:checked').value === 'tracked';
+      const qty = parseInt(document.getElementById('newQty').value);
+      const prefix = document.getElementById('newPrefix').value.trim();
+
+      const res = await fetch('/api/inventory/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          item_code: code,
+          item_name: name,
+          category: category,
+          make_model: model,
+          storage_location: location,
+          is_individually_tracked: isTracked,
+          quantity: qty,
+          asset_prefix: prefix
+        })
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        alert(json.message);
+        closeAddItemModal();
+        loadInventory();
+      } else {
+        alert('Error: ' + json.error);
       }
     }
 
@@ -540,10 +679,20 @@
 
     // Handle Item Type Switch on Issue form
     function handleItemSelectChange() {
-      const val = document.getElementById('issueItemSelect').value;
-      if (val === "1") {
+      const selectedId = parseInt(document.getElementById('issueItemSelect').value);
+      const selectedItem = cachedInventory && cachedInventory.items.find(i => i.id === selectedId);
+
+      if (selectedItem && selectedItem.is_individually_tracked) {
         document.getElementById('assetIdGroup').classList.remove('hidden');
         document.getElementById('quantityGroup').classList.add('hidden');
+        // Filter assets matching this item
+        const assetSelect = document.getElementById('issueAssetSelect');
+        const available = cachedInventory.assets.filter(a => a.item_id === selectedId && !a.is_issued && a.condition === 'USABLE');
+        if (available.length > 0) {
+          assetSelect.innerHTML = available.map(a => `<option value="${a.asset_id}">${a.asset_id} (Available)</option>`).join('');
+        } else {
+          assetSelect.innerHTML = `<option value="">No units available</option>`;
+        }
       } else {
         document.getElementById('assetIdGroup').classList.add('hidden');
         document.getElementById('quantityGroup').classList.remove('hidden');
