@@ -87,8 +87,10 @@ The project was engineered with a strict 3-tier division of labor across team me
 - **Stock Summary Cards:** Real-time counters displaying Total Inventory (225 physical units), Available for Issue, Currently Borrowed, Overdue Units, and Quarantined/Damaged assets.
 - **Dynamic Equipment & Restock Modal:** Integrated modal to onboard new hardware equipment with location tagging, categorization, and automatic serialized asset ID generation.
 - **Issue Desk (Dual Student Identification):** Supports selecting from existing registered students OR entering new student details on the fly (Enrolment Number, Name, Programme, Semester, and Mobile Number). Automatically calculates the mandatory 15-day return deadline.
-- **Returns & Inspection:** Allows processing complete or partial returns, selecting inspected condition (`USABLE`, `DAMAGED`, `MAINTENANCE`), and recording receiving staff remarks.
-- **Renewal Approvals Queue:** Dedicated dashboard for reviewing student renewal submissions with 1-click `Approve (+15 Days)` and `Reject` actions.
+- **Returns & Inspection:** Allows processing complete or partial returns, selecting inspected condition (`USABLE`, `DAMAGED`, `MAINTENANCE`), and recording receiving staff remarks. Prominently displays both **Loan ID** and **Student ID** with a 1-click **"Test IDOR"** shortcut that pre-populates target and forged identities directly into the Security Showcase.
+- **Renewal & Extension Desk:** A dual-purpose hub featuring:
+  - **Pending Requests Queue:** Review student renewal submissions with 1-click `Approve (+15 Days)` and `Reject` actions.
+  - **Direct Extension Hub:** Coordinators can directly grant 15-day extensions to any active equipment loan on the spot with formal administrative logging, or submit requests on behalf of students.
 
 ### 5.2. Student Self-Service Portal & Profile Switcher
 - **Dynamic Student Profile Switcher & Multi-Programme Support:** Dropdown allowing switching between registered students across diverse academic programmes (e.g. *B.Tech. CSE, B.Tech. Cyber Security, M.Sc. DFIS, M.Tech. CS*). Selecting or adding a student instantly updates the top navigation subtitle, profile badge, semester tags, and programme metadata across the entire portal.

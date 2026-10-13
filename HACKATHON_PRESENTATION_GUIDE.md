@@ -164,21 +164,24 @@ CampusAssetHub implements proactive defensive coding patterns addressing the **O
    - The confirmation alert demonstrates that the due date was computed automatically as **exactly 15 calendar days** from the transaction date.
    - Available Development Boards automatically decrement by the requested quantity.
 
-### ⏱️ Phase 3: Student Portal, Profile Switcher & Renewal Mediation (30 Seconds)
+### ⏱️ Phase 3: Student Portal & Renewal Desk (Dual Renewal Workflows) (45 Seconds)
 1. In the top-right header, toggle to **Student Portal**.
-2. **Demonstrate Role-Based UI Isolation:** Coordinator-only tabs (Live Inventory, Issue Desk, Returns, Renewal Approvals, Audit Ledger) and stock summary counters are hidden in student view.
-3. **Demonstrate Dynamic Student Profile Switcher & Multi-Programme Support:** Use the dropdown to switch between registered students across programmes (e.g., *B.Tech. CSE, B.Tech. Cyber Security, M.Sc. DFIS*). Point out how the top header subtitle, profile badge, semester tags, and active loans dynamically update to reflect the student's exact programme (e.g., *B.Tech. CSE Profile* vs *M.Sc. DFIS Profile*).
-4. On an active loan, click **Request 15-Day Renewal**, input a justification (`Extending hardware testing verification`), and submit.
-5. **Key Policy Demonstration:**
+2. **Demonstrate Dynamic Student Profile Switcher & Multi-Programme Support:** Use the dropdown to switch between registered students across programmes (e.g., *B.Tech. CSE, B.Tech. Cyber Security, M.Sc. DFIS*). Point out how the top header subtitle, profile badge, semester tags, and active loans dynamically update to reflect the student's exact programme (e.g., *B.Tech. CSE Profile* vs *M.Sc. DFIS Profile*).
+3. On an active loan, click **Request 15-Day Renewal**, input a justification (`Extending hardware testing verification`), and submit.
+4. **Key Policy Demonstration (Rule #3):**
    - Direct the panel's attention to the loan due date: **it remains unchanged**. The request status reflects `PENDING` coordinator review.
-6. In the top header, switch back to **Coordinator (Admin)**.
-7. Open the **Renewal Approvals** tab and click **Approve (+15 Days)**.
-8. Confirm that the due date is extended by exactly 15 calendar days from the previous deadline.
+5. In the top header, switch back to **Coordinator (Admin)**.
+6. Open the **Renewal & Extension Desk** tab:
+   - **Section A (Queue):** Shows the student's pending request. Click **Approve (+15 Days)** and confirm that the deadline is extended by exactly 15 days from the previous due date.
+   - **Section B (Direct Extension):** Shows all active loans with a 1-click **Extend (+15 Days)** button allowing coordinators to grant immediate departmental extensions without waiting for student requests.
 
-### ⏱️ Phase 4: Partial Return & Condition Inspection (30 Seconds)
+### ⏱️ Phase 4: Partial Return & IDOR Linking (30 Seconds)
 1. Open the **Returns & Inspection** tab.
-2. Click **Return Item** on an active loan.
-3. Demonstrate entering a partial quantity (e.g., returning 1 of 2 cables) and selecting the condition:
+2. **Highlight Student ID & Loan ID Visibility:**
+   - Every active loan clearly displays both `Loan #ID` and `Student ID: X (Enrolment)` so evaluators can verify ownership boundaries.
+   - Point out the **"Test IDOR"** shortcut button that automatically pre-fills the loan and an unauthorized attacker student ID into the Security Showcase!
+3. Click **Return Item** on an active loan.
+4. Demonstrate entering a partial quantity (e.g., returning 1 of 2 cables) and selecting the condition:
    - Returning as `USABLE` restores available stock immediately.
    - Returning as `DAMAGED` or `MAINTENANCE` quarantines the unit without incrementing available stock.
 

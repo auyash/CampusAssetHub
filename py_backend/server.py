@@ -711,6 +711,51 @@ class SecureInventoryHandler(http.server.BaseHTTPRequestHandler):
                 })
 
             # -----------------------------------------------------------------
+            # 3B. DIRECT COORDINATOR LOAN EXTENSION (+15 Calendar Days)
+            # -----------------------------------------------------------------
+            elif re.match(r"^/api/loans/(\d+)/coordinator-extend$", path):
+                loan_id = int(re.match(r"^/api/loans/(\d+)/coordinator-extend$", path).group(1))
+                remarks = data.get("remarks", "Authorized departmental extension").strip()
+                coord_name = data.get("coordinator_name", "Lab Coordinator")
+
+                cursor.execute("""
+                    SELECT l.*, s.name as student_name, i.item_name
+                    FROM loans l
+                    JOIN students s ON l.student_id = s.id
+                    JOIN inventory_items i ON l.item_id = i.id
+                    WHERE l.id = ?
+                """, (loan_id,))
+                loan = cursor.fetchone()
+                if not loan:
+                    return self._send_json(404, {"success": False, "error": f"Loan #{loan_id} not found."})
+
+                if loan["status"] == "RETURNED":
+                    return self._send_json(400, {"success": False, "error": "Cannot extend a returned loan."})
+
+                old_due = datetime.datetime.fromisoformat(loan["due_date"])
+                new_due = old_due + datetime.timedelta(days=15)
+                new_due_str = new_due.isoformat()
+
+                cursor.execute("UPDATE loans SET due_date = ?, status = 'RENEWED' WHERE id = ?", (new_due_str, loan_id))
+
+                record_audit_log(cursor, actor_id, "COORDINATOR", "DIRECT_LOAN_EXTENSION", f"Loan #{loan_id}", {
+                    "loan_id": loan_id, "student": loan["student_name"], "item": loan["item_name"],
+                    "previous_due": loan["due_date"], "new_due_date": new_due_str, "remarks": remarks
+                }, client_ip)
+
+                conn.commit()
+                return self._send_json(200, {
+                    "success": True,
+                    "data": {
+                        "loan_id": loan_id,
+                        "student": loan["student_name"],
+                        "previous_due": loan["due_date"],
+                        "new_due_date": new_due_str,
+                        "message": f"Loan #{loan_id} extended by 15 calendar days to {new_due_str[:10]}."
+                    }
+                })
+
+            # -----------------------------------------------------------------
             # 4. RETURN EQUIPMENT (Full, Partial & Condition checks)
             # -----------------------------------------------------------------
             elif re.match(r"^/api/loans/(\d+)/return$", path):
@@ -956,6 +1001,8 @@ class SecureInventoryHandler(http.server.BaseHTTPRequestHandler):
                     "message": f"Successfully registered new equipment: {item_name} ({qty} units).",
                     "data": {"item_id": new_item_id, "item_code": item_code, "item_name": item_name, "quantity": qty}
                 })
+
+            else:
                 self._send_json(404, {"success": False, "error": "Endpoint not found"})
 
         except Exception as e:
@@ -968,7 +1015,7 @@ class SecureInventoryHandler(http.server.BaseHTTPRequestHandler):
 # =====================================================================
 def run():
     init_db()
-    with socketserver.TCPServer(("", PORT), SecureInventoryHandler) as httpd:
+    with http.server.ThreadingHTTPServer(("", PORT), SecureInventoryHandler) as httpd:
         httpd.allow_reuse_address = True
         print("=============================================================")
         print(f"[SERVER] NFSU Secure Department Inventory API Running on Port {PORT}!")
