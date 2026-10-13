@@ -44,26 +44,26 @@
   <!-- NAVIGATION TABS -->
   <nav class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-1 sm:space-x-8 overflow-x-auto">
-      <button onclick="switchTab('tab-stock')" id="nav-tab-stock" class="tab-btn py-3 px-3 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 flex items-center gap-2 whitespace-nowrap">
+      <button onclick="switchTab('tab-stock')" id="nav-tab-stock" class="tab-btn role-coord py-3 px-3 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 flex items-center gap-2 whitespace-nowrap">
         <i class="fa-solid fa-boxes-stacked"></i> Live Inventory
       </button>
-      <button onclick="switchTab('tab-issue')" id="nav-tab-issue" class="tab-btn py-3 px-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap">
+      <button onclick="switchTab('tab-issue')" id="nav-tab-issue" class="tab-btn role-coord py-3 px-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap">
         <i class="fa-solid fa-hand-holding-hand"></i> Issue Equipment (15-Day)
       </button>
-      <button onclick="switchTab('tab-returns')" id="nav-tab-returns" class="tab-btn py-3 px-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap">
+      <button onclick="switchTab('tab-returns')" id="nav-tab-returns" class="tab-btn role-coord py-3 px-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap">
         <i class="fa-solid fa-arrow-rotate-left"></i> Returns & Inspection
       </button>
-      <button onclick="switchTab('tab-renewals')" id="nav-tab-renewals" class="tab-btn py-3 px-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap">
+      <button onclick="switchTab('tab-renewals')" id="nav-tab-renewals" class="tab-btn role-coord py-3 px-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap">
         <i class="fa-solid fa-clock-rotate-left"></i> Renewal Approvals
         <span id="badgePendingRenewals" class="ml-1 bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full font-bold hidden">0</span>
       </button>
-      <button onclick="switchTab('tab-student')" id="nav-tab-student" class="tab-btn py-3 px-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap">
+      <button onclick="switchTab('tab-student')" id="nav-tab-student" class="tab-btn role-student py-3 px-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap">
         <i class="fa-solid fa-user-check"></i> My Borrowed Items
       </button>
-      <button onclick="switchTab('tab-security')" id="nav-tab-security" class="tab-btn py-3 px-3 text-sm font-medium border-b-2 border-transparent text-emerald-600 hover:text-emerald-700 flex items-center gap-2 whitespace-nowrap">
+      <button onclick="switchTab('tab-security')" id="nav-tab-security" class="tab-btn role-all py-3 px-3 text-sm font-medium border-b-2 border-transparent text-emerald-600 hover:text-emerald-700 flex items-center gap-2 whitespace-nowrap">
         <i class="fa-solid fa-shield-halved text-emerald-500"></i> Security Showcase
       </button>
-      <button onclick="switchTab('tab-audit')" id="nav-tab-audit" class="tab-btn py-3 px-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap">
+      <button onclick="switchTab('tab-audit')" id="nav-tab-audit" class="tab-btn role-coord py-3 px-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap">
         <i class="fa-solid fa-receipt"></i> Audit Ledger (SHA-256)
       </button>
     </div>
@@ -73,7 +73,7 @@
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
 
     <!-- METRIC CARDS BANNER -->
-    <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
+    <div id="coordinatorMetricsBanner" class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
       <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
         <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Items</div>
         <div id="statTotal" class="text-2xl font-bold text-slate-900 mt-1">30</div>
@@ -311,7 +311,7 @@
               <span class="text-xs text-blue-200">Switch active student view:</span>
             </div>
             <div class="flex items-center gap-3">
-              <select id="activeStudentSelect" onchange="changeActiveStudent()" class="bg-white/10 hover:bg-white/20 border border-blue-400/30 text-white rounded-lg px-3 py-1.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-white">
+              <select id="activeStudentSelect" onchange="changeActiveStudent()" class="bg-white text-slate-900 border border-slate-300 shadow-sm rounded-lg px-3 py-1.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 <!-- Dynamically populated with all students in DB -->
               </select>
             </div>
@@ -573,22 +573,39 @@
     let cachedInventory = null;
     let cachedStudents = [];
 
-    // Switch Role
+    // Switch Role (Enforces RBAC in Navigation)
     function setRole(role) {
       currentRole = role;
       if (role === 'COORDINATOR') {
         document.getElementById('btnRoleCoord').className = "px-4 py-1.5 rounded-lg text-sm font-semibold transition-all bg-indigo-600 text-white shadow";
         document.getElementById('btnRoleStudent').className = "px-4 py-1.5 rounded-lg text-sm font-medium text-indigo-300 hover:text-white transition-all";
+        
+        // Show Coordinator tabs, metrics banner, hide student-only tab
+        document.querySelectorAll('.role-coord').forEach(el => el.classList.remove('hidden'));
+        document.querySelectorAll('.role-student').forEach(el => el.classList.add('hidden'));
+        document.getElementById('coordinatorMetricsBanner').classList.remove('hidden');
+        
         switchTab('tab-stock');
       } else {
         document.getElementById('btnRoleStudent').className = "px-4 py-1.5 rounded-lg text-sm font-semibold transition-all bg-indigo-600 text-white shadow";
         document.getElementById('btnRoleCoord').className = "px-4 py-1.5 rounded-lg text-sm font-medium text-indigo-300 hover:text-white transition-all";
+        
+        // In Student Portal: Hide Coordinator administrative tabs and metrics
+        document.querySelectorAll('.role-coord').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.role-student').forEach(el => el.classList.remove('hidden'));
+        document.getElementById('coordinatorMetricsBanner').classList.add('hidden');
+        
         switchTab('tab-student');
       }
     }
 
     // Switch Tab
     function switchTab(tabId) {
+      // Prevent students from bypassing to coordinator tabs
+      if (currentRole === 'STUDENT' && tabId !== 'tab-student' && tabId !== 'tab-security') {
+        tabId = 'tab-student';
+      }
+
       document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
       document.getElementById(tabId).classList.remove('hidden');
 
@@ -1080,6 +1097,7 @@
 
     // Initial Load
     window.onload = () => {
+      setRole('COORDINATOR');
       loadInventory();
       loadStudents();
     };

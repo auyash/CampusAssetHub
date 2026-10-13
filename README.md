@@ -84,15 +84,17 @@ The project was engineered with a strict 3-tier division of labor across team me
 ## 5. Core Functional Modules
 
 ### 5.1. Coordinator Command Center
-- **Stock Summary Cards:** Real-time counters displaying Total Inventory, Available for Issue, Currently Borrowed, Overdue Units, and Quarantined/Damaged assets.
-- **Issue Desk:** Selects registered student and equipment type. Auto-calculates and renders the mandatory 15-day due date before persisting the transaction.
+- **Stock Summary Cards:** Real-time counters displaying Total Inventory (225 physical units), Available for Issue, Currently Borrowed, Overdue Units, and Quarantined/Damaged assets.
+- **Dynamic Equipment & Restock Modal:** Integrated modal to onboard new hardware equipment with location tagging, categorization, and automatic serialized asset ID generation.
+- **Issue Desk (Dual Student Identification):** Supports selecting from existing registered students OR entering new student details on the fly (Enrolment Number, Name, Programme, Semester, and Mobile Number). Automatically calculates the mandatory 15-day return deadline.
 - **Returns & Inspection:** Allows processing complete or partial returns, selecting inspected condition (`USABLE`, `DAMAGED`, `MAINTENANCE`), and recording receiving staff remarks.
 - **Renewal Approvals Queue:** Dedicated dashboard for reviewing student renewal submissions with 1-click `Approve (+15 Days)` and `Reject` actions.
 
-### 5.2. Student Self-Service Portal
+### 5.2. Student Self-Service Portal & Profile Switcher
+- **Dynamic Student Profile Switcher:** Dropdown allowing switching between registered students (e.g. *Aarav Sharma, Diya Patel, Rohan Mehta* or any newly registered student). Automatically updates Enrolment Number and Programme metadata.
+- **Role-Based UI Isolation:** In Student Portal mode, coordinator-only navigation tabs (Live Inventory, Issue Desk, Returns, Renewal Approvals, Audit Ledger) and stock summary metrics are hidden to present a student-facing interface.
 - **Active Loans View:** Color-coded card listing all borrowed items with exact return dates and active countdown badges.
-- **Renewal Request Flow:** Modal allowing students to submit renewal justifications. Clearly informs the user that approval is pending coordinator sign-off.
-- **Borrowing History:** Archival log of previously returned items and inspection statuses.
+- **Renewal Request Flow:** Modal allowing students to submit renewal justifications, correctly maintaining `PENDING` status until authorized.
 
 ---
 

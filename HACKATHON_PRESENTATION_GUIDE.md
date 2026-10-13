@@ -109,12 +109,13 @@ The project was engineered with a strict 3-tier division of labor across the tea
   - Designed the relational data model across 7 core entities: `students`, `inventory_items`, `individual_assets`, `loans`, `renewal_requests`, `returns`, and `audit_logs`.
   - Implemented database-level `CHECK(available_quantity >= 0)` constraints to mathematically prevent negative stock balances.
   - Enforced relational foreign keys to eliminate orphan transactions and maintain referential integrity.
-  - Pre-seeded the baseline evaluation scenario for **M.Sc. DFIS Semester I** (10 Development Boards `DB-001` through `DB-010` and 20 USB Cables).
+  - Populated a comprehensive laboratory catalog spanning 15 categories with 50 serialized hardware assets (`DB-001..DB-014`, `LP-001..LP-005`, `MM-001..MM-004`, `OSC-001..OSC-004`, `RPI`, `WB`, `SDR`, `LA`) and 225 total units.
 
 ### 👤 Member 2: Backend Logic & Secure Coding Lead
 - **Files Owned:** `py_backend/server.py`
 - **Key Responsibilities:**
   - Engineered the 15-day issue algorithm and renewal authorization pipeline.
+  - Implemented flexible borrower ingestion supporting both registered students and dynamic on-the-fly registration.
   - Programmed condition-based inventory routing (quarantine handling vs. stock restoration).
   - Implemented core **OWASP Top 10** defenses: 100% parameterized SQL query execution, server-side Insecure Direct Object Reference (IDOR) ownership guards, and payload attribute whitelisting against mass assignment.
   - Developed the cryptographic SHA-256 hash chaining engine for tamper-evident audit logging.
@@ -123,7 +124,8 @@ The project was engineered with a strict 3-tier division of labor across the tea
 - **Files Owned:** `frontend/index.html` (served via `py_backend/static/index.html`)
 - **Key Responsibilities:**
   - Built the responsive client application using modern Tailwind CSS.
-  - Implemented instantaneous role-switching between Coordinator and Student contexts.
+  - Implemented an interactive Student Profile Switcher in the student portal to inspect individual student loan accounts.
+  - Enforced client-side Role-Based UI Isolation: Coordinator administrative tabs and inventory summary metrics are strictly hidden while viewing the student portal.
   - Designed dynamic countdown indicators and color-coded overdue alert badges.
   - Built the interactive **Security Showcase panel**, allowing evaluators to execute live attack simulations and observe real-time defenses.
 
