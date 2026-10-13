@@ -1038,17 +1038,9 @@
               ${loan.due_date.split('T')[0]} ${loan.is_overdue ? `<span class="bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded text-[10px] font-bold">OVERDUE</span>` : ''}
             </td>
             <td class="py-3 px-4 text-center">
-              <div class="flex items-center justify-center gap-1.5">
-                <button onclick="openReturnModal(${loan.id}, '${loan.item_name}', ${remaining})" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg transition shadow-sm">
-                  <i class="fa-solid fa-rotate-left mr-1"></i> Return
-                </button>
-                <button onclick="fillIdorTest(${loan.id}, ${loan.student_id})" class="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-2 py-1.5 rounded-lg transition shadow-sm" title="Pre-fill into IDOR test">
-                  <i class="fa-solid fa-crosshairs mr-1"></i> IDOR
-                </button>
-                <button onclick="coordinatorExtendLoan(${loan.id})" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-2 py-1.5 rounded-lg transition shadow-sm" title="Extend Loan by 15 Days">
-                  <i class="fa-solid fa-plus mr-0.5"></i>15d
-                </button>
-              </div>
+              <button onclick="openReturnModal(${loan.id}, '${loan.item_name}', ${remaining})" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition shadow-sm">
+                <i class="fa-solid fa-rotate-left mr-1"></i> Return
+              </button>
             </td>
           </tr>
         `;
