@@ -61,9 +61,16 @@ The platform strictly automates the operational requirements defined in Problem 
 
 ### Rule 4: Partial Returns & Condition-Based Quarantine
 - **Partial Returns Support:** If a student borrows 2 USB cables and returns 1, available stock is immediately incremented by 1, the loan status updates to `PARTIALLY_RETURNED`, and 1 cable remains actively tracked against the student.
-- **Physical Condition Inspection (`USABLE`, `DAMAGED`, `MAINTENANCE`):**
+- **Physical Condition Inspection (`USABLE`, `DAMAGED`, `LOST`, `MAINTENANCE`):**
   - Items returned in `USABLE` condition return directly to active inventory.
-  - Items returned in `DAMAGED` or `MAINTENANCE` condition are **quarantined** and excluded from available stock until formally serviced and cleared by department staff.
+  - Items returned in `DAMAGED`, `LOST`, or `MAINTENANCE` condition are **quarantined** and excluded from available stock until formally serviced, repaired, or accounted for by department staff.
+  - Staff can inspect assets in the Hardware Asset Maintenance modal and update conditions back to `USABLE` once serviced.
+
+### Rule 5: Department Inventory Policies & Governance Engine
+- **Issue Limits:** Maximum 3 concurrent active equipment loans permitted per student (prevents hoarding and resource exhaustion).
+- **Renewal Limits:** Maximum 2 renewals permitted per loan (+15 days each, totaling 30 calendar days maximum extension).
+- **Overdue Borrowing Restriction:** Students with unreturned overdue equipment are strictly blocked from receiving new items until overdue assets are returned.
+- **Policy Control:** Coordinators can review and adjust operational thresholds directly via the **Inventory Policies** modal (`/api/policies`).
 
 ---
 

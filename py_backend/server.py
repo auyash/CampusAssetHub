@@ -63,7 +63,7 @@ def init_db():
         item_id INTEGER NOT NULL REFERENCES inventory_items(id) ON DELETE CASCADE,
         asset_id TEXT UNIQUE NOT NULL,
         serial_number TEXT,
-        condition TEXT NOT NULL DEFAULT 'USABLE' CHECK(condition IN ('USABLE', 'DAMAGED', 'MAINTENANCE', 'RETIRED')),
+        condition TEXT NOT NULL DEFAULT 'USABLE' CHECK(condition IN ('USABLE', 'DAMAGED', 'LOST', 'MAINTENANCE', 'RETIRED')),
         is_issued BOOLEAN NOT NULL DEFAULT 0,
         location_notes TEXT
     );
@@ -103,7 +103,7 @@ def init_db():
         loan_id INTEGER NOT NULL REFERENCES loans(id),
         return_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         quantity_returned INTEGER NOT NULL CHECK(quantity_returned > 0),
-        condition_on_return TEXT NOT NULL CHECK(condition_on_return IN ('USABLE', 'DAMAGED', 'MAINTENANCE')),
+        condition_on_return TEXT NOT NULL CHECK(condition_on_return IN ('USABLE', 'DAMAGED', 'LOST', 'MAINTENANCE')),
         receiving_staff TEXT NOT NULL,
         remarks TEXT
     );
@@ -121,8 +121,29 @@ def init_db():
         previous_hash TEXT NOT NULL,
         current_hash TEXT NOT NULL
     );
+
+    -- 8. Inventory Policies Table (Issue limits, renewal limits, condition restrictions)
+    CREATE TABLE IF NOT EXISTS inventory_policies (
+        policy_key TEXT PRIMARY KEY,
+        policy_name TEXT NOT NULL,
+        policy_value TEXT NOT NULL,
+        description TEXT NOT NULL
+    );
     """)
     conn.commit()
+
+    # Seed default inventory policies if empty
+    cursor.execute("SELECT COUNT(*) as count FROM inventory_policies")
+    if cursor.fetchone()["count"] == 0:
+        default_policies = [
+            ('max_active_loans_per_student', 'Max Issue Limit Per Student', '3', 'Maximum concurrent active equipment loans allowed per student (enforced at issue time).'),
+            ('max_renewals_per_loan', 'Max Renewal Limit Per Loan', '2', 'Maximum renewals permitted per loan (each renewal grants +15 calendar days).'),
+            ('block_issue_on_overdue', 'Overdue Borrowing Restriction', '1', 'Students with any unreturned overdue items are strictly barred from receiving new equipment.'),
+            ('quarantine_restricted_conditions', 'Quarantine Condition Restriction', '1', 'Assets in DAMAGED, LOST, or MAINTENANCE condition are strictly quarantined from available stock.'),
+            ('default_loan_duration_days', 'Mandatory Issue Duration', '15', 'Every issued item automatically enforces exactly 15 calendar days loan period.')
+        ]
+        cursor.executemany("INSERT INTO inventory_policies VALUES (?, ?, ?, ?)", default_policies)
+        conn.commit()
 
     # Seed data if empty
     cursor.execute("SELECT COUNT(*) as count FROM students")
@@ -322,6 +343,14 @@ def verify_audit_ledger():
 
     return {"isValid": True, "checkedCount": len(rows)}
 
+def get_policy(conn, key, default):
+    cursor = conn.cursor()
+    cursor.execute("SELECT policy_value FROM inventory_policies WHERE policy_key = ?", (key,))
+    row = cursor.fetchone()
+    if row:
+        return row["policy_value"]
+    return default
+
 # =====================================================================
 # 3. HTTP REQUEST HANDLER WITH REST API & SECURITY SHOWCASE
 # =====================================================================
@@ -394,6 +423,7 @@ class SecureInventoryHandler(http.server.BaseHTTPRequestHandler):
                 cursor.execute("""
                     SELECT i.*, 
                     (SELECT COUNT(*) FROM individual_assets a WHERE a.item_id = i.id AND a.condition = 'DAMAGED') as damaged_count,
+                    (SELECT COUNT(*) FROM individual_assets a WHERE a.item_id = i.id AND a.condition = 'LOST') as lost_count,
                     (SELECT COUNT(*) FROM individual_assets a WHERE a.item_id = i.id AND a.condition = 'MAINTENANCE') as maintenance_count
                     FROM inventory_items i
                 """)
@@ -466,6 +496,12 @@ class SecureInventoryHandler(http.server.BaseHTTPRequestHandler):
                 integrity = verify_audit_ledger()
                 self._send_json(200, {"success": True, "data": {"logs": logs, "integrityCheck": integrity}})
 
+            # 6. GET /api/policies
+            elif path == "/api/policies":
+                cursor.execute("SELECT * FROM inventory_policies ORDER BY policy_key ASC")
+                policies = [dict(row) for row in cursor.fetchall()]
+                self._send_json(200, {"success": True, "data": policies})
+
             elif path == "/health":
                 self._send_json(200, {"status": "HEALTHY", "time": datetime.datetime.now().isoformat()})
 
@@ -533,12 +569,40 @@ class SecureInventoryHandler(http.server.BaseHTTPRequestHandler):
                 if not student:
                     return self._send_json(400, {"success": False, "error": "Please provide student details (Name and Enrolment Number are required)."})
 
+                # 1. Inventory Policy: Check maximum concurrent active loans per student
+                max_active = int(get_policy(conn, "max_active_loans_per_student", "3"))
+                cursor.execute("""
+                    SELECT COUNT(*) as cnt FROM loans 
+                    WHERE student_id = ? AND status IN ('ACTIVE', 'RENEWED', 'PARTIALLY_RETURNED')
+                """, (student_id,))
+                active_loans_cnt = cursor.fetchone()["cnt"]
+                if active_loans_cnt >= max_active:
+                    return self._send_json(400, {
+                        "success": False,
+                        "error": f"Inventory Policy Issue Limit: Maximum {max_active} active equipment loans permitted per student. {student['name']} already holds {active_loans_cnt} active loan(s)."
+                    })
+
+                # 2. Inventory Policy: Check restriction on borrowing if student has overdue loans
+                block_overdue = get_policy(conn, "block_issue_on_overdue", "1") == "1"
+                if block_overdue:
+                    now_utc_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
+                    cursor.execute("""
+                        SELECT COUNT(*) as cnt FROM loans 
+                        WHERE student_id = ? AND status IN ('ACTIVE', 'RENEWED', 'PARTIALLY_RETURNED') AND due_date < ?
+                    """, (student_id, now_utc_str))
+                    overdue_cnt = cursor.fetchone()["cnt"]
+                    if overdue_cnt > 0:
+                        return self._send_json(400, {
+                            "success": False,
+                            "error": f"Inventory Policy Restriction: {student['name']} has {overdue_cnt} overdue loan(s). New equipment issues are strictly barred until all overdue assets are returned."
+                        })
+
                 cursor.execute("SELECT * FROM inventory_items WHERE id = ?", (item_id,))
                 item = cursor.fetchone()
                 if not item:
                     return self._send_json(400, {"success": False, "error": f"Item ID {item_id} not found."})
 
-                # Check Tracked Asset rules
+                # Check Tracked Asset rules & Policy condition quarantine
                 if item["is_individually_tracked"]:
                     if not asset_id:
                         return self._send_json(400, {"success": False, "error": f"Item {item['item_name']} requires a specific Asset ID (e.g. DB-014)."})
@@ -552,7 +616,7 @@ class SecureInventoryHandler(http.server.BaseHTTPRequestHandler):
                     if asset["is_issued"]:
                         return self._send_json(400, {"success": False, "error": f"Asset {asset_id} is already issued to another student."})
                     if asset["condition"] != "USABLE":
-                        return self._send_json(400, {"success": False, "error": f"Asset {asset_id} cannot be issued: condition is {asset['condition']}."})
+                        return self._send_json(400, {"success": False, "error": f"Inventory Policy Restriction: Asset {asset_id} is quarantined in '{asset['condition']}' condition and cannot be issued until inspected and restored."})
 
                 # Stock check
                 if item["available_quantity"] < quantity:
@@ -561,9 +625,10 @@ class SecureInventoryHandler(http.server.BaseHTTPRequestHandler):
                         "error": f"{quantity} items requested, but only {item['available_quantity']} are currently available."
                     })
 
-                # 15-day calculation
+                # Policy Loan duration calculation (Default 15 calendar days)
+                duration_days = int(get_policy(conn, "default_loan_duration_days", "15"))
                 now = datetime.datetime.now(datetime.timezone.utc)
-                due = now + datetime.timedelta(days=15)
+                due = now + datetime.timedelta(days=duration_days)
                 issue_str = now.isoformat()
                 due_str = due.isoformat()
 
@@ -631,6 +696,16 @@ class SecureInventoryHandler(http.server.BaseHTTPRequestHandler):
                     conn.commit()
                     return self._send_json(403, {"success": False, "error": "Access Denied: You do not own this borrowing record (IDOR Blocked)."})
 
+                # Check renewal limit policy
+                max_renewals = int(get_policy(conn, "max_renewals_per_loan", "2"))
+                cursor.execute("SELECT COUNT(*) as cnt FROM renewal_requests WHERE loan_id = ? AND status = 'APPROVED'", (loan_id,))
+                approved_renewals = cursor.fetchone()["cnt"]
+                if approved_renewals >= max_renewals:
+                    return self._send_json(400, {
+                        "success": False,
+                        "error": f"Policy Renewal Limit Enforced: This loan has already reached the maximum limit of {max_renewals} approved renewal(s). Further extensions are restricted."
+                    })
+
                 # Check if pending request exists
                 cursor.execute("SELECT * FROM renewal_requests WHERE loan_id = ? AND status = 'PENDING'", (loan_id,))
                 if cursor.fetchone():
@@ -688,6 +763,16 @@ class SecureInventoryHandler(http.server.BaseHTTPRequestHandler):
                     conn.commit()
                     return self._send_json(200, {"success": True, "message": "Renewal request rejected. Due date unchanged."})
 
+                # APPROVE: Check renewal limit policy
+                max_renewals = int(get_policy(conn, "max_renewals_per_loan", "2"))
+                cursor.execute("SELECT COUNT(*) as cnt FROM renewal_requests WHERE loan_id = ? AND status = 'APPROVED'", (request_row["loan_id"],))
+                approved_renewals = cursor.fetchone()["cnt"]
+                if approved_renewals >= max_renewals:
+                    return self._send_json(400, {
+                        "success": False,
+                        "error": f"Policy Renewal Limit Enforced: Maximum {max_renewals} approved renewals permitted per loan. Limit reached."
+                    })
+
                 # APPROVE: Extend due date by 15 calendar days from EXISTING due date
                 old_due = datetime.datetime.fromisoformat(request_row["due_date"])
                 new_due = old_due + datetime.timedelta(days=15)
@@ -739,9 +824,25 @@ class SecureInventoryHandler(http.server.BaseHTTPRequestHandler):
                 if loan["status"] == "RETURNED":
                     return self._send_json(400, {"success": False, "error": "Cannot extend a returned loan."})
 
+                # Check renewal limit policy
+                max_renewals = int(get_policy(conn, "max_renewals_per_loan", "2"))
+                cursor.execute("SELECT COUNT(*) as cnt FROM renewal_requests WHERE loan_id = ? AND status = 'APPROVED'", (loan_id,))
+                approved_cnt = cursor.fetchone()["cnt"]
+                if approved_cnt >= max_renewals:
+                    return self._send_json(400, {
+                        "success": False,
+                        "error": f"Policy Renewal Limit Enforced: Maximum {max_renewals} renewals allowed per loan (30 calendar days maximum total extension). Limit reached for Loan #{loan_id}."
+                    })
+
                 old_due = datetime.datetime.fromisoformat(loan["due_date"])
                 new_due = old_due + datetime.timedelta(days=15)
                 new_due_str = new_due.isoformat()
+                now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+                cursor.execute("""
+                    INSERT INTO renewal_requests (loan_id, reason, status, approved_by, approval_date, remarks, extended_due_date)
+                    VALUES (?, 'Coordinator Direct Desk Extension', 'APPROVED', ?, ?, ?, ?)
+                """, (loan_id, coord_name, now_str, remarks, new_due_str))
 
                 cursor.execute("UPDATE loans SET due_date = ?, status = 'RENEWED' WHERE id = ?", (new_due_str, loan_id))
 
@@ -1007,6 +1108,68 @@ class SecureInventoryHandler(http.server.BaseHTTPRequestHandler):
                     "success": True,
                     "message": f"Successfully registered new equipment: {item_name} ({qty} units).",
                     "data": {"item_id": new_item_id, "item_code": item_code, "item_name": item_name, "quantity": qty}
+                })
+
+            # -----------------------------------------------------------------
+            # 7. UPDATE INVENTORY POLICIES (Coordinator Policy Governance)
+            # -----------------------------------------------------------------
+            elif path == "/api/policies":
+                policy_key = data.get("policy_key")
+                policy_value = str(data.get("policy_value", "")).strip()
+                if not policy_key or not policy_value:
+                    return self._send_json(400, {"success": False, "error": "policy_key and policy_value are required"})
+
+                cursor.execute("SELECT * FROM inventory_policies WHERE policy_key = ?", (policy_key,))
+                existing = cursor.fetchone()
+                if not existing:
+                    return self._send_json(404, {"success": False, "error": f"Policy '{policy_key}' not found."})
+
+                old_val = existing["policy_value"]
+                cursor.execute("UPDATE inventory_policies SET policy_value = ? WHERE policy_key = ?", (policy_value, policy_key))
+                record_audit_log(cursor, actor_id, "COORDINATOR", "POLICY_UPDATE", f"Policy {policy_key}", {
+                    "policy_key": policy_key, "old_value": old_val, "new_value": policy_value
+                }, client_ip)
+                conn.commit()
+                return self._send_json(200, {
+                    "success": True,
+                    "message": f"Policy '{existing['policy_name']}' updated to '{policy_value}'.",
+                    "data": {"policy_key": policy_key, "new_value": policy_value}
+                })
+
+            # -----------------------------------------------------------------
+            # 8. UPDATE INDIVIDUAL ASSET CONDITION (Repair/Service/Quarantine)
+            # -----------------------------------------------------------------
+            elif re.match(r"^/api/assets/([^/]+)/condition$", path):
+                asset_id = re.match(r"^/api/assets/([^/]+)/condition$", path).group(1)
+                new_condition = data.get("condition", "USABLE").strip().upper()
+                notes = data.get("notes", "Condition updated by coordinator").strip()
+
+                if new_condition not in ("USABLE", "DAMAGED", "LOST", "MAINTENANCE", "RETIRED"):
+                    return self._send_json(400, {"success": False, "error": f"Invalid condition: '{new_condition}'. Must be USABLE, DAMAGED, LOST, MAINTENANCE, or RETIRED."})
+
+                cursor.execute("SELECT * FROM individual_assets WHERE asset_id = ?", (asset_id,))
+                asset = cursor.fetchone()
+                if not asset:
+                    return self._send_json(404, {"success": False, "error": f"Asset {asset_id} not found."})
+
+                old_condition = asset["condition"]
+                cursor.execute("UPDATE individual_assets SET condition = ?, location_notes = ? WHERE asset_id = ?", (new_condition, notes, asset_id))
+
+                # Adjust available inventory quantity if asset is not currently issued
+                if not asset["is_issued"]:
+                    if old_condition in ("DAMAGED", "LOST", "MAINTENANCE") and new_condition == "USABLE":
+                        cursor.execute("UPDATE inventory_items SET available_quantity = available_quantity + 1 WHERE id = ?", (asset["item_id"],))
+                    elif old_condition == "USABLE" and new_condition in ("DAMAGED", "LOST", "MAINTENANCE", "RETIRED"):
+                        cursor.execute("UPDATE inventory_items SET available_quantity = MAX(0, available_quantity - 1) WHERE id = ?", (asset["item_id"],))
+
+                record_audit_log(cursor, actor_id, "COORDINATOR", "ASSET_CONDITION_UPDATE", f"Asset {asset_id}", {
+                    "asset_id": asset_id, "old_condition": old_condition, "new_condition": new_condition, "notes": notes
+                }, client_ip)
+                conn.commit()
+                return self._send_json(200, {
+                    "success": True,
+                    "message": f"Asset {asset_id} condition updated from {old_condition} to {new_condition}.",
+                    "data": {"asset_id": asset_id, "condition": new_condition}
                 })
 
             else:

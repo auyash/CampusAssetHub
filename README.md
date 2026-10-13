@@ -36,9 +36,11 @@ Manual record-keeping often results in inventory shrinkage, unverified condition
 The platform strictly satisfies the requirements of **Problem Statement #5: Department Inventory and Student Item Issue Management System**:
 
 - **Strict 15-Day Return Policy:** Every issue transaction automatically computes `Due Date = Issue Date + 15 Calendar Days`.
-- **Coordinator Approval for Renewals:** Submitting a renewal request sets the status to `PENDING` without extending the deadline. Only authorized coordinator approval grants an additional 15 days from the previous due date.
+- **Coordinator Approval & Renewal Limits:** Submitting a renewal request sets status to `PENDING` without extending the deadline. Only authorized coordinator approval grants an additional 15 days. Enforces a policy limit of max 2 renewals per loan (maximum 30 days total extension).
+- **Issue Limits Per Student:** Strict policy limit of max 3 concurrent active equipment loans per student to prevent hoarding of critical academic assets.
+- **Overdue Borrowing Restriction:** Students with unreturned overdue equipment are barred from borrowing additional items until resolved.
 - **Partial Returns Support:** If a student borrows multiple quantity items (e.g., 2 USB cables) and returns only 1, the system restores available stock by 1 while keeping the remainder outstanding.
-- **Physical Condition Inspection:** Items marked `DAMAGED` or `MAINTENANCE` upon return are quarantined from available stock until formally serviced.
+- **Physical Condition Inspection & Quarantine:** Items marked `DAMAGED`, `LOST`, or `MAINTENANCE` upon return are strictly quarantined and withheld from available stock until formally serviced, repaired, and restored by the coordinator via the Hardware Asset Maintenance Modal.
 - **Automated Overdue Detection:** Any active loan where `Current Date > Due Date` is flagged with visual indicators and days-overdue metrics.
 - **Pre-Seeded Test Case:** Built-in seed data matching the official test scenario for **M.Sc. Digital Forensics and Information Security (DFIS)**, Semester I, with 10 Development Boards (`DB-001` through `DB-010`) and 20 Reusable USB Cables.
 
