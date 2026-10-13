@@ -175,26 +175,110 @@ def init_db():
                 VALUES (3, ?, ?, 'USABLE', 0, 'Lab 204, Shelf 2')
             """, (f"MM-{pad}", f"SN-FLK-{pad}"))
 
-        # 4. Reusable USB-C Cables (Quantity-Based reusable item from problem statement)
+        # 4. Digital Storage Oscilloscopes (100MHz Dual-Channel)
         cursor.execute("""
             INSERT INTO inventory_items (id, item_code, item_name, category, description, make_model, is_individually_tracked, total_quantity, available_quantity, storage_location)
-            VALUES (4, 'USB-C-2M', 'Reusable USB-C Data Cable 2m', 'Accessories', 'High speed shielded cable', 'Standard OEM', 0, 20, 20, 'Lab 204, Drawer 2')
+            VALUES (4, 'OSC-RIGOL-1054Z', 'Digital Storage Oscilloscope (100MHz)', 'Testing Instruments', 'Dual-channel digital signal capture instrument', 'Rigol DS1054Z', 1, 4, 4, 'Lab 204, Bench 1')
+        """)
+        for i in range(1, 5):
+            pad = f"{i:03d}"
+            cursor.execute("""
+                INSERT INTO individual_assets (item_id, asset_id, serial_number, condition, is_issued, location_notes)
+                VALUES (4, ?, ?, 'USABLE', 0, 'Lab 204, Bench 1')
+            """, (f"OSC-{pad}", f"SN-RIG-{pad}"))
+
+        # 5. Raspberry Pi 4 Model B Embedded Kits
+        cursor.execute("""
+            INSERT INTO inventory_items (id, item_code, item_name, category, description, make_model, is_individually_tracked, total_quantity, available_quantity, storage_location)
+            VALUES (5, 'RPI-4B-8GB', 'Raspberry Pi 4 Model B (8GB RAM)', 'Embedded Systems', 'IoT security and embedded penetration testing kit', 'Raspberry Pi Foundation', 1, 8, 8, 'Lab 204, Cabinet B')
+        """)
+        for i in range(1, 9):
+            pad = f"{i:03d}"
+            cursor.execute("""
+                INSERT INTO individual_assets (item_id, asset_id, serial_number, condition, is_issued, location_notes)
+                VALUES (5, ?, ?, 'USABLE', 0, 'Lab 204, Cabinet B')
+            """, (f"RPI-{pad}", f"SN-RPI-{pad}"))
+
+        # 6. USB Forensic Hardware Write Blockers (Forensic Lab Specific)
+        cursor.execute("""
+            INSERT INTO inventory_items (id, item_code, item_name, category, description, make_model, is_individually_tracked, total_quantity, available_quantity, storage_location)
+            VALUES (6, 'WRITE-BLOCKER-T8U', 'Forensic USB 3.0 Hardware Write Blocker', 'Forensic Hardware', 'Read-only digital evidence acquisition bridge', 'Tableau T8u', 1, 6, 6, 'Lab 204, Locker 2')
+        """)
+        for i in range(1, 7):
+            pad = f"{i:03d}"
+            cursor.execute("""
+                INSERT INTO individual_assets (item_id, asset_id, serial_number, condition, is_issued, location_notes)
+                VALUES (6, ?, ?, 'USABLE', 0, 'Lab 204, Locker 2')
+            """, (f"WB-{pad}", f"SN-TAB-{pad}"))
+
+        # 7. Software Defined Radio (HackRF One SDR)
+        cursor.execute("""
+            INSERT INTO inventory_items (id, item_code, item_name, category, description, make_model, is_individually_tracked, total_quantity, available_quantity, storage_location)
+            VALUES (7, 'SDR-HACKRF-ONE', 'HackRF One Software Defined Radio Transceiver', 'RF Analysis', '1MHz to 6GHz RF signals security analysis module', 'Great Scott Gadgets', 1, 4, 4, 'Lab 204, Locker 3')
+        """)
+        for i in range(1, 5):
+            pad = f"{i:03d}"
+            cursor.execute("""
+                INSERT INTO individual_assets (item_id, asset_id, serial_number, condition, is_issued, location_notes)
+                VALUES (7, ?, ?, 'USABLE', 0, 'Lab 204, Locker 3')
+            """, (f"SDR-{pad}", f"SN-GSG-{pad}"))
+
+        # 8. 16-Channel USB Logic Analyzers
+        cursor.execute("""
+            INSERT INTO inventory_items (id, item_code, item_name, category, description, make_model, is_individually_tracked, total_quantity, available_quantity, storage_location)
+            VALUES (8, 'LOGIC-SALEAE-16', '16-Channel 100MS/s USB Logic Analyzer', 'Testing Instruments', 'Serial bus decoder for SPI, I2C, and UART inspection', 'Saleae Logic Pro 16', 1, 5, 5, 'Lab 204, Shelf 3')
+        """)
+        for i in range(1, 6):
+            pad = f"{i:03d}"
+            cursor.execute("""
+                INSERT INTO individual_assets (item_id, asset_id, serial_number, condition, is_issued, location_notes)
+                VALUES (8, ?, ?, 'USABLE', 0, 'Lab 204, Shelf 3')
+            """, (f"LA-{pad}", f"SN-SAL-{pad}"))
+
+        # 9. Reusable USB-C Cables (Quantity-Based reusable)
+        cursor.execute("""
+            INSERT INTO inventory_items (id, item_code, item_name, category, description, make_model, is_individually_tracked, total_quantity, available_quantity, storage_location)
+            VALUES (9, 'USB-C-2M', 'Reusable USB-C Data Cable 2m', 'Accessories', 'High speed shielded data synchronization cable', 'Standard OEM', 0, 30, 30, 'Lab 204, Drawer 2')
         """)
 
-        # 5. Hardware Interfacing Adapters (Quantity-Based - explicitly mentioned in prompt)
+        # 10. Hardware Interfacing Adapters (Quantity-Based - from prompt)
         cursor.execute("""
             INSERT INTO inventory_items (id, item_code, item_name, category, description, make_model, is_individually_tracked, total_quantity, available_quantity, storage_location)
-            VALUES (5, 'ADAPTER-USB-SERIAL', 'USB to TTL UART Serial Converter Adapters', 'Accessories', 'Hardware communication bridge adapter', 'CP2102 Bridge', 0, 15, 15, 'Lab 204, Drawer 3')
+            VALUES (10, 'ADAPTER-USB-SERIAL', 'USB to TTL UART Serial Converter Adapters', 'Accessories', 'Hardware communication bridge adapter', 'CP2102 Bridge', 0, 20, 20, 'Lab 204, Drawer 3')
         """)
 
-        # 6. Breadboard Jumper Wire Sets (Quantity-Based reusable)
+        # 11. Breadboard Jumper Wire Sets (Quantity-Based reusable)
         cursor.execute("""
             INSERT INTO inventory_items (id, item_code, item_name, category, description, make_model, is_individually_tracked, total_quantity, available_quantity, storage_location)
-            VALUES (6, 'JUMPER-WIRES-65', 'Breadboard Jumper Wire Ribbon Set (65 pcs)', 'Accessories', 'Male-to-Male prototyping jumper wires', 'Standard Ribbons', 0, 25, 25, 'Lab 204, Drawer 4')
+            VALUES (11, 'JUMPER-WIRES-65', 'Breadboard Jumper Wire Ribbon Set (65 pcs)', 'Accessories', 'Male-to-Male prototyping jumper wires', 'Standard Ribbons', 0, 35, 35, 'Lab 204, Drawer 4')
+        """)
+
+        # 12. High-Speed 4K HDMI Cables 1.8m
+        cursor.execute("""
+            INSERT INTO inventory_items (id, item_code, item_name, category, description, make_model, is_individually_tracked, total_quantity, available_quantity, storage_location)
+            VALUES (12, 'CABLE-HDMI-4K', 'Shielded High-Speed HDMI 2.0 Cable 1.8m', 'Accessories', 'Braided display interconnect for lab monitors', 'AmazonBasics', 0, 25, 25, 'Lab 204, Drawer 5')
+        """)
+
+        # 13. Cat6 Shielded Gigabit Ethernet Patch Cables (3m)
+        cursor.execute("""
+            INSERT INTO inventory_items (id, item_code, item_name, category, description, make_model, is_individually_tracked, total_quantity, available_quantity, storage_location)
+            VALUES (13, 'ETH-CAT6-3M', 'Cat6 Shielded RJ45 Gigabit Ethernet Cable 3m', 'Accessories', 'Network security practical patching cable', 'D-Link Pro', 0, 30, 30, 'Lab 204, Drawer 6')
+        """)
+
+        # 14. Forensic Anti-Static ESD Wrist Strap Grounding Kits
+        cursor.execute("""
+            INSERT INTO inventory_items (id, item_code, item_name, category, description, make_model, is_individually_tracked, total_quantity, available_quantity, storage_location)
+            VALUES (14, 'ESD-STRAP-KIT', 'Anti-Static ESD Wrist Strap with Grounding Cord', 'Safety Equipment', 'Electrostatic discharge protection for sensitive ICs', 'Desco Pro', 0, 20, 20, 'Lab 204, Drawer 7')
+        """)
+
+        # 15. Electronic Sensor Kits (37-in-1 Sensor Modules)
+        cursor.execute("""
+            INSERT INTO inventory_items (id, item_code, item_name, category, description, make_model, is_individually_tracked, total_quantity, available_quantity, storage_location)
+            VALUES (15, 'SENSOR-KIT-37', '37-in-1 Hardware Sensor Module Starter Kit', 'Prototyping', 'Assorted sensors for IoT vulnerability assessment', 'Elegoo Sensor V2', 0, 15, 15, 'Lab 204, Shelf 4')
         """)
 
         conn.commit()
-        print("[DB] Seeding complete! Expanded inventory (Boards DB-001..DB-014, Laptops LP-001..LP-005, Multimeters, USB Cables, Adapters, Jumper Wires) initialized.")
+        print("[DB] Seeding complete! 15 Categories & Equipment Sets initialized.")
     conn.close()
 
 # =====================================================================
