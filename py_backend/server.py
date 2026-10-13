@@ -248,6 +248,23 @@ class SecureInventoryHandler(http.server.BaseHTTPRequestHandler):
                 self._send_json(500, {"error": f"Failed to serve UI: {str(e)}"})
                 return
 
+        # Serve Static Images (NFSU Logo)
+        if path == "/nfsu_logo.webp":
+            try:
+                import os
+                img_path = os.path.join(os.path.dirname(__file__), "static", "nfsu_logo.webp")
+                with open(img_path, "rb") as f:
+                    content = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "image/webp")
+                self.send_header("Content-Length", str(len(content)))
+                self.end_headers()
+                self.wfile.write(content)
+                return
+            except Exception as e:
+                self._send_json(404, {"error": f"Image not found: {str(e)}"})
+                return
+
         conn = get_db_connection()
         cursor = conn.cursor()
 
