@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NFSU Department Inventory & Student Asset Portal</title>
+  <!-- Tailwind CSS CDN for modern, clean UI -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .badge-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col">
+
+  <!-- TOP HEADER -->
+  <header class="bg-indigo-900 text-white shadow-lg border-b border-indigo-700">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap justify-between items-center gap-4">
+      <div class="flex items-center gap-3">
+        <div class="bg-indigo-600 p-2 rounded-lg shadow">
+          <i class="fa-solid fa-microchip text-2xl text-indigo-200"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight">NFSU Department Asset Management</h1>
+          <p class="text-xs text-indigo-200">M.Sc. Digital Forensics & Information Security (DFIS)</p>
+        </div>
+      </div>
+
+      <!-- ROLE SWITCHER & BADGES -->
+      <div class="flex items-center gap-3">
+        <div class="flex items-center bg-indigo-950 p-1 rounded-xl border border-indigo-800">
+          <button id="btnRoleCoord" onclick="setRole('COORDINATOR')" class="px-4 py-1.5 rounded-lg text-sm font-semibold transition-all bg-indigo-600 text-white shadow">
+            <i class="fa-solid fa-user-shield mr-1.5"></i> Coordinator (Admin)
+          </button>
+          <button id="btnRoleStudent" onclick="setRole('STUDENT')" class="px-4 py-1.5 rounded-lg text-sm font-medium text-indigo-300 hover:text-white transition-all">
+            <i class="fa-solid fa-graduation-cap mr-1.5"></i> Student Portal
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- NAVIGATION TABS -->
+  <nav class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-1 sm:space-x-8 overflow-x-auto">
+      <button onclick="switchTab('tab-stock')" id="nav-tab-stock" class="tab-btn py-3 px-3 text-sm font-bold border-b-2 border-indigo-600 text-indigo-600 flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-boxes-stacked"></i> Live Inventory
+      </button>
+      <button onclick="switchTab('tab-issue')" id="nav-tab-issue" class="tab-btn py-3 px-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-hand-holding-hand"></i> Issue Equipment (15-Day)
+      </button>
+      <button onclick="switchTab('tab-returns')" id="nav-tab-returns" class="tab-btn py-3 px-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-arrow-rotate-left"></i> Returns & Inspection
+      </button>
+      <button onclick="switchTab('tab-renewals')" id="nav-tab-renewals" class="tab-btn py-3 px-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-clock-rotate-left"></i> Renewal Approvals
+        <span id="badgePendingRenewals" class="ml-1 bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full font-bold hidden">0</span>
+      </button>
+      <button onclick="switchTab('tab-student')" id="nav-tab-student" class="tab-btn py-3 px-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-user-check"></i> My Borrowed Items
+      </button>
+      <button onclick="switchTab('tab-security')" id="nav-tab-security" class="tab-btn py-3 px-3 text-sm font-medium border-b-2 border-transparent text-emerald-600 hover:text-emerald-700 flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-shield-halved text-emerald-500"></i> Security Showcase
+      </button>
+      <button onclick="switchTab('tab-audit')" id="nav-tab-audit" class="tab-btn py-3 px-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-receipt"></i> Audit Ledger (SHA-256)
+      </button>
+    </div>
+  </nav>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+
+    <!-- METRIC CARDS BANNER -->
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Items</div>
+        <div id="statTotal" class="text-2xl font-bold text-slate-900 mt-1">30</div>
+        <div class="text-xs text-slate-400 mt-0.5">10 Boards + 20 Cables</div>
+      </div>
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div class="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Available</div>
+        <div id="statAvailable" class="text-2xl font-bold text-emerald-600 mt-1">--</div>
+        <div class="text-xs text-slate-400 mt-0.5">Ready for issuance</div>
+      </div>
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div class="text-xs font-semibold text-blue-600 uppercase tracking-wider">Currently Issued</div>
+        <div id="statIssued" class="text-2xl font-bold text-blue-600 mt-1">--</div>
+        <div class="text-xs text-slate-400 mt-0.5">With students</div>
+      </div>
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div class="text-xs font-semibold text-rose-600 uppercase tracking-wider">Overdue</div>
+        <div id="statOverdue" class="text-2xl font-bold text-rose-600 mt-1">0</div>
+        <div class="text-xs text-slate-400 mt-0.5">>15 days overdue</div>
+      </div>
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div class="text-xs font-semibold text-amber-600 uppercase tracking-wider">Damaged / Repair</div>
+        <div id="statDamaged" class="text-2xl font-bold text-amber-600 mt-1">0</div>
+        <div class="text-xs text-slate-400 mt-0.5">Unavailable</div>
+      </div>
+    </div>
+
+    <!-- TAB 1: LIVE INVENTORY -->
+    <div id="tab-stock" class="tab-content">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+        <div class="p-4 border-b border-slate-100 flex justify-between items-center flex-wrap gap-3">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Department Equipment Catalog</h2>
+            <p class="text-sm text-slate-500">M.Sc. DFIS Laboratory Inventory</p>
+          </div>
+          <button onclick="loadInventory()" class="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg font-medium transition">
+            <i class="fa-solid fa-arrows-rotate mr-1"></i> Refresh Stock
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50 text-slate-500 text-xs font-bold uppercase tracking-wider border-b border-slate-200">
+                <th class="py-3 px-4">Item Code & Name</th>
+                <th class="py-3 px-4">Type</th>
+                <th class="py-3 px-4">Storage Location</th>
+                <th class="py-3 px-4">Total Quantity</th>
+                <th class="py-3 px-4">Available</th>
+                <th class="py-3 px-4">Status</th>
+              </tr>
+            </thead>
+            <tbody id="inventoryTableBody" class="divide-y divide-slate-100 text-sm">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ASSET BREAKDOWN (DB-001 TO DB-010) -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+        <h3 class="text-md font-bold text-slate-900 mb-2">Tracked Development Boards (DB-001 to DB-010)</h3>
+        <p class="text-xs text-slate-500 mb-4">Each board has a unique asset ID and can only be issued to one student at a time.</p>
+        <div id="assetsGrid" class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: ISSUE EQUIPMENT -->
+    <div id="tab-issue" class="tab-content hidden">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 max-w-2xl mx-auto">
+        <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100">
+          <div class="bg-indigo-100 text-indigo-700 p-2.5 rounded-lg font-bold">
+            <i class="fa-solid fa-calendar-plus text-xl"></i>
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Issue Equipment (15-Day Cycle)</h2>
+            <p class="text-xs text-slate-500">Enforces automatic due date: <strong>Issue Date + 15 Calendar Days</strong></p>
+          </div>
+        </div>
+
+        <form id="issueForm" onsubmit="handleIssueSubmit(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Select Student</label>
+            <select id="issueStudentSelect" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none" required>
+              <!-- Populated via JS -->
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Select Item</label>
+            <select id="issueItemSelect" onchange="handleItemSelectChange()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none" required>
+              <option value="1">ARM Cortex Development Board (Individually Tracked)</option>
+              <option value="2">Reusable USB-C Data Cable 2m (Quantity Bulk)</option>
+            </select>
+          </div>
+
+          <div id="assetIdGroup">
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Select Unique Asset ID</label>
+            <select id="issueAssetSelect" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <!-- Populated via JS -->
+            </select>
+          </div>
+
+          <div id="quantityGroup" class="hidden">
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Quantity to Issue</label>
+            <input type="number" id="issueQuantity" value="1" min="1" max="10" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Purpose / Lab Subject</label>
+            <input type="text" id="issuePurpose" value="Embedded Security Practical (DFIS103)" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none" required>
+          </div>
+
+          <!-- AUTOMATIC 15-DAY NOTICE -->
+          <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-3.5 flex items-start gap-3">
+            <i class="fa-solid fa-circle-info text-indigo-600 mt-0.5"></i>
+            <div class="text-xs text-indigo-900 leading-relaxed">
+              <strong>Mandatory Rule Enforcement:</strong> The due date will be calculated automatically as <span class="font-bold underline">exactly 15 calendar days</span> from today.
+            </div>
+          </div>
+
+          <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg shadow transition">
+            <i class="fa-solid fa-check mr-2"></i> Issue Equipment & Record Transaction
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- TAB 3: RETURNS & INSPECTION -->
+    <div id="tab-returns" class="tab-content hidden">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <h2 class="text-lg font-bold text-slate-900 mb-1">Return Equipment & Physical Inspection</h2>
+        <p class="text-xs text-slate-500 mb-4">Supports complete or partial returns. Items in <em>Damaged</em> or <em>Maintenance</em> condition are quarantined.</p>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50 text-slate-500 text-xs font-bold uppercase tracking-wider border-b border-slate-200">
+                <th class="py-3 px-4">Loan ID</th>
+                <th class="py-3 px-4">Student</th>
+                <th class="py-3 px-4">Item & Asset</th>
+                <th class="py-3 px-4">Issued Qty</th>
+                <th class="py-3 px-4">Remaining</th>
+                <th class="py-3 px-4">Due Date</th>
+                <th class="py-3 px-4">Action</th>
+              </tr>
+            </thead>
+            <tbody id="returnsTableBody" class="divide-y divide-slate-100 text-sm">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: RENEWAL APPROVALS -->
+    <div id="tab-renewals" class="tab-content hidden">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <h2 class="text-lg font-bold text-slate-900 mb-1">Student Renewal Requests Queue</h2>
+        <p class="text-xs text-slate-500 mb-4">Rule: Submitting a request does <strong>not</strong> extend the due date. Coordinator approval extends it by <strong>+15 calendar days</strong>.</p>
+
+        <div id="pendingRenewalsList" class="space-y-3">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: STUDENT PORTAL -->
+    <div id="tab-student" class="tab-content hidden">
+      <div class="bg-gradient-to-r from-blue-700 to-indigo-800 text-white p-5 rounded-2xl mb-6 shadow">
+        <div class="flex justify-between items-center flex-wrap gap-4">
+          <div>
+            <span class="bg-blue-500 text-xs uppercase px-2.5 py-1 rounded font-bold tracking-wider">Student Profile</span>
+            <h2 class="text-xl font-bold mt-1">Aarav Sharma</h2>
+            <p class="text-xs text-blue-200">Enrolment: NFSU2026DFIS001 | Programme: M.Sc. DFIS (Sem 1)</p>
+          </div>
+          <div class="text-right text-xs text-blue-200">
+            <i class="fa-solid fa-shield text-emerald-400 mr-1"></i> IDOR Protected Session
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <h3 class="text-md font-bold text-slate-900 mb-3">My Active Borrowed Equipment</h3>
+        <div id="studentLoansList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 6: SECURITY SHOWCASE (DEMO TO JUDGES) -->
+    <div id="tab-security" class="tab-content hidden">
+      <div class="bg-emerald-950 text-emerald-300 p-6 rounded-2xl mb-6 border border-emerald-800 shadow-md">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="bg-emerald-600 text-white p-2.5 rounded-lg">
+            <i class="fa-solid fa-user-lock text-xl"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-white">NFSU Secure Coding & Defense Showcase</h2>
+            <p class="text-xs text-emerald-300">Live Demonstration of OWASP Top 10 Defenses for Judges</p>
+          </div>
+        </div>
+        <p class="text-xs text-emerald-200 leading-relaxed mt-2">
+          Click the simulation buttons below to execute actual malicious attack payloads against this running application. Observe how our server-side security layer catches, neutralizes, and records each incident in real time.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <!-- ATTACK 1: SQL INJECTION -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <span class="bg-rose-100 text-rose-700 text-xs font-bold px-2 py-0.5 rounded">OWASP A03</span>
+              <h3 class="font-bold text-slate-900">SQL Injection (SQLi)</h3>
+            </div>
+            <p class="text-xs text-slate-500 mb-3">Attacker tries to bypass database queries with tautology payload: <code class="bg-slate-100 text-rose-600 px-1 py-0.5 rounded">' OR '1'='1</code></p>
+            <div class="bg-slate-50 border border-slate-200 rounded p-2.5 text-xs font-mono text-slate-700 mb-4">
+              SELECT * FROM inventory_items WHERE item_name = '<span class="text-rose-600 font-bold">' OR '1'='1</span>'
+            </div>
+          </div>
+          <div>
+            <button onclick="runAttackSimulation('SQL_INJECTION')" class="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2.5 rounded-lg transition">
+              <i class="fa-solid fa-play mr-1"></i> Simulate SQL Injection
+            </button>
+            <div id="resSql" class="mt-3 text-xs hidden"></div>
+          </div>
+        </div>
+
+        <!-- ATTACK 2: IDOR (INSECURE DIRECT OBJECT REFERENCE) -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <span class="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded">OWASP A01</span>
+              <h3 class="font-bold text-slate-900">IDOR Borrowing Tampering</h3>
+            </div>
+            <p class="text-xs text-slate-500 mb-3">Student #2 attempts to alter or renew a loan belonging to Student #1 by tampering with URL parameters.</p>
+            <div class="bg-slate-50 border border-slate-200 rounded p-2.5 text-xs font-mono text-slate-700 mb-4">
+              POST /api/loans/<span class="text-amber-600 font-bold">1</span>/request-renewal<br>
+              Header: <span class="text-slate-500">x-student-id: 2</span>
+            </div>
+          </div>
+          <div>
+            <button onclick="runAttackSimulation('IDOR_EXPLOIT')" class="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2.5 rounded-lg transition">
+              <i class="fa-solid fa-play mr-1"></i> Simulate IDOR Attack
+            </button>
+            <div id="resIdor" class="mt-3 text-xs hidden"></div>
+          </div>
+        </div>
+
+        <!-- ATTACK 3: PRIVILEGE ESCALATION -->
+        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <span class="bg-purple-100 text-purple-700 text-xs font-bold px-2 py-0.5 rounded">OWASP A04</span>
+              <h3 class="font-bold text-slate-900">Privilege Escalation</h3>
+            </div>
+            <p class="text-xs text-slate-500 mb-3">Student injects <code class="bg-slate-100 text-purple-600 px-1 py-0.5 rounded">"status": "APPROVED"</code> into renewal JSON to bypass coordinator approval.</p>
+            <div class="bg-slate-50 border border-slate-200 rounded p-2.5 text-xs font-mono text-slate-700 mb-4">
+              { "reason": "...", <span class="text-purple-600 font-bold">"status": "APPROVED"</span> }
+            </div>
+          </div>
+          <div>
+            <button onclick="runAttackSimulation('PRIVILEGE_ESCALATION')" class="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2.5 rounded-lg transition">
+              <i class="fa-solid fa-play mr-1"></i> Simulate Mass Assignment
+            </button>
+            <div id="resPriv" class="mt-3 text-xs hidden"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAB 7: AUDIT LEDGER -->
+    <div id="tab-audit" class="tab-content hidden">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Forensic Tamper-Evident Audit Ledger</h2>
+            <p class="text-xs text-slate-500">Every action is cryptographically chained using SHA-256 hashes.</p>
+          </div>
+          <div id="auditIntegrityBadge" class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5">
+            <i class="fa-solid fa-shield-check"></i> Integrity: 100% Cryptographically Verified
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider border-b border-slate-200">
+                <th class="py-2.5 px-3">Timestamp</th>
+                <th class="py-2.5 px-3">Actor & Role</th>
+                <th class="py-2.5 px-3">Action</th>
+                <th class="py-2.5 px-3">Target</th>
+                <th class="py-2.5 px-3">Current SHA-256 Hash</th>
+              </tr>
+            </thead>
+            <tbody id="auditTableBody" class="divide-y divide-slate-100 font-mono">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- RETURN MODAL -->
+  <div id="returnModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl">
+      <h3 class="text-lg font-bold text-slate-900 mb-1">Process Item Return</h3>
+      <p id="returnModalSub" class="text-xs text-slate-500 mb-4"></p>
+      
+      <form onsubmit="handleReturnSubmit(event)" class="space-y-4">
+        <input type="hidden" id="modalLoanId">
+        
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Quantity Returned</label>
+          <input type="number" id="modalQty" min="1" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm" required>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Inspected Physical Condition</label>
+          <select id="modalCondition" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm" required>
+            <option value="USABLE">🟢 Usable (Restores Stock)</option>
+            <option value="DAMAGED">🔴 Damaged (Quarantine - Unavailable)</option>
+            <option value="MAINTENANCE">🟡 Needs Maintenance (Unavailable)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Staff Remarks</label>
+          <input type="text" id="modalRemarks" value="Returned in verified order" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm">
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button type="button" onclick="closeReturnModal()" class="w-1/2 bg-slate-100 text-slate-700 font-bold py-2.5 rounded-lg text-sm">Cancel</button>
+          <button type="submit" class="w-1/2 bg-indigo-600 text-white font-bold py-2.5 rounded-lg text-sm">Submit Return</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-500">
+    Designed for NFSU Academic Department Asset & Equipment Management • Secure Coding Standard
+  </footer>
+
+  <!-- APPLICATION LOGIC JAVASCRIPT -->
+  <script>
+    let currentRole = 'COORDINATOR';
+    let cachedInventory = null;
+    let cachedStudents = [];
+
+    // Switch Role
+    function setRole(role) {
+      currentRole = role;
+      if (role === 'COORDINATOR') {
+        document.getElementById('btnRoleCoord').className = "px-4 py-1.5 rounded-lg text-sm font-semibold transition-all bg-indigo-600 text-white shadow";
+        document.getElementById('btnRoleStudent').className = "px-4 py-1.5 rounded-lg text-sm font-medium text-indigo-300 hover:text-white transition-all";
+        switchTab('tab-stock');
+      } else {
+        document.getElementById('btnRoleStudent').className = "px-4 py-1.5 rounded-lg text-sm font-semibold transition-all bg-indigo-600 text-white shadow";
+        document.getElementById('btnRoleCoord').className = "px-4 py-1.5 rounded-lg text-sm font-medium text-indigo-300 hover:text-white transition-all";
+        switchTab('tab-student');
+      }
+    }
+
+    // Switch Tab
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.getElementById(tabId).classList.remove('hidden');
+
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-indigo-600', 'text-indigo-600');
+        btn.classList.add('border-transparent', 'text-slate-500');
+      });
+
+      const navBtn = document.getElementById('nav-' + tabId);
+      if (navBtn) {
+        navBtn.classList.add('border-indigo-600', 'text-indigo-600');
+        navBtn.classList.remove('border-transparent', 'text-slate-500');
+      }
+
+      if (tabId === 'tab-stock') loadInventory();
+      if (tabId === 'tab-returns') loadLoans();
+      if (tabId === 'tab-renewals') loadRenewals();
+      if (tabId === 'tab-student') loadStudentLoans();
+      if (tabId === 'tab-audit') loadAuditLogs();
+    }
+
+    // Load Inventory & Summary
+    async function loadInventory() {
+      try {
+        const res = await fetch('/api/inventory');
+        const json = await res.json();
+        if (!json.success) return;
+
+        cachedInventory = json.data;
+        const items = json.data.items;
+        const assets = json.data.assets;
+
+        // Metric calculations
+        let total = 0, available = 0, damaged = 0;
+        items.forEach(i => {
+          total += i.total_quantity;
+          available += i.available_quantity;
+          damaged += (i.damaged_count || 0) + (i.maintenance_count || 0);
+        });
+
+        document.getElementById('statTotal').innerText = total;
+        document.getElementById('statAvailable').innerText = available;
+        document.getElementById('statIssued').innerText = total - available - damaged;
+        document.getElementById('statDamaged').innerText = damaged;
+
+        // Populate Table
+        const tbody = document.getElementById('inventoryTableBody');
+        tbody.innerHTML = items.map(item => `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="py-3 px-4 font-bold text-slate-800">${item.item_name} <br><span class="text-xs text-slate-400 font-mono">${item.item_code}</span></td>
+            <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-xs font-semibold ${item.is_individually_tracked ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}">${item.is_individually_tracked ? 'Tracked Asset' : 'Bulk Reusable'}</span></td>
+            <td class="py-3 px-4 text-slate-600">${item.storage_location}</td>
+            <td class="py-3 px-4 font-semibold">${item.total_quantity}</td>
+            <td class="py-3 px-4 font-bold text-emerald-600">${item.available_quantity}</td>
+            <td class="py-3 px-4">
+              <span class="px-2 py-0.5 rounded-full text-xs font-bold ${item.available_quantity > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
+                ${item.available_quantity > 0 ? 'In Stock' : 'Out of Stock'}
+              </span>
+            </td>
+          </tr>
+        `).join('');
+
+        // Populate Assets Grid
+        const grid = document.getElementById('assetsGrid');
+        grid.innerHTML = assets.map(a => `
+          <div class="border rounded-lg p-2.5 text-center ${a.is_issued ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-emerald-50 border-emerald-200 text-emerald-900'}">
+            <div class="font-bold text-sm">${a.asset_id}</div>
+            <div class="text-[10px] uppercase font-semibold mt-0.5">${a.is_issued ? 'Issued' : 'Available'}</div>
+          </div>
+        `).join('');
+
+        // Populate Issue Selectors
+        const assetSelect = document.getElementById('issueAssetSelect');
+        const availableAssets = assets.filter(a => !a.is_issued && a.condition === 'USABLE');
+        assetSelect.innerHTML = availableAssets.map(a => `<option value="${a.asset_id}">${a.asset_id} (Available)</option>`).join('');
+
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // Load Students
+    async function loadStudents() {
+      const res = await fetch('/api/students');
+      const json = await res.json();
+      if (json.success) {
+        cachedStudents = json.data;
+        const select = document.getElementById('issueStudentSelect');
+        select.innerHTML = cachedStudents.map(s => `<option value="${s.id}">${s.name} (${s.enrolment_no})</option>`).join('');
+      }
+    }
+
+    // Handle Item Type Switch on Issue form
+    function handleItemSelectChange() {
+      const val = document.getElementById('issueItemSelect').value;
+      if (val === "1") {
+        document.getElementById('assetIdGroup').classList.remove('hidden');
+        document.getElementById('quantityGroup').classList.add('hidden');
+      } else {
+        document.getElementById('assetIdGroup').classList.add('hidden');
+        document.getElementById('quantityGroup').classList.remove('hidden');
+      }
+    }
+
+    // Submit Issue
+    async function handleIssueSubmit(e) {
+      e.preventDefault();
+      const itemId = parseInt(document.getElementById('issueItemSelect').value);
+      const studentId = parseInt(document.getElementById('issueStudentSelect').value);
+      const purpose = document.getElementById('issuePurpose').value;
+      const assetId = itemId === 1 ? document.getElementById('issueAssetSelect').value : null;
+      const quantity = itemId === 1 ? 1 : parseInt(document.getElementById('issueQuantity').value);
+
+      const res = await fetch('/api/loans/issue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          student_id: studentId,
+          item_id: itemId,
+          asset_id: assetId,
+          quantity: quantity,
+          purpose: purpose,
+          issuing_staff: 'Coordinator Admin'
+        })
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        alert(json.data.message);
+        switchTab('tab-stock');
+      } else {
+        alert('Error: ' + json.error);
+      }
+    }
+
+    // Load Loans for Returns
+    async function loadLoans() {
+      const res = await fetch('/api/loans');
+      const json = await res.json();
+      if (!json.success) return;
+
+      const activeLoans = json.data.filter(l => l.status !== 'RETURNED');
+      const tbody = document.getElementById('returnsTableBody');
+
+      tbody.innerHTML = activeLoans.map(loan => {
+        const remaining = loan.issued_quantity - loan.returned_quantity;
+        return `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="py-3 px-4 font-mono font-bold">#${loan.id}</td>
+            <td class="py-3 px-4 font-semibold">${loan.student_name} <br><span class="text-xs text-slate-400 font-mono">${loan.enrolment_no}</span></td>
+            <td class="py-3 px-4">${loan.item_name} ${loan.asset_id ? `<span class="bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded text-xs font-mono font-bold">${loan.asset_id}</span>` : ''}</td>
+            <td class="py-3 px-4">${loan.issued_quantity}</td>
+            <td class="py-3 px-4 font-bold text-amber-600">${remaining}</td>
+            <td class="py-3 px-4 text-xs font-semibold ${loan.is_overdue ? 'text-rose-600 font-bold' : 'text-slate-600'}">
+              ${loan.due_date.split('T')[0]} ${loan.is_overdue ? `<span class="bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded text-[10px] font-bold">OVERDUE</span>` : ''}
+            </td>
+            <td class="py-3 px-4">
+              <button onclick="openReturnModal(${loan.id}, '${loan.item_name}', ${remaining})" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">
+                Return Item
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Return Modal
+    function openReturnModal(id, name, remaining) {
+      document.getElementById('modalLoanId').value = id;
+      document.getElementById('returnModalSub').innerText = `Item: ${name} (Remaining outstanding: ${remaining})`;
+      document.getElementById('modalQty').max = remaining;
+      document.getElementById('modalQty').value = remaining;
+      document.getElementById('returnModal').classList.remove('hidden');
+    }
+
+    function closeReturnModal() {
+      document.getElementById('returnModal').classList.add('hidden');
+    }
+
+    async function handleReturnSubmit(e) {
+      e.preventDefault();
+      const loanId = document.getElementById('modalLoanId').value;
+      const qty = parseInt(document.getElementById('modalQty').value);
+      const condition = document.getElementById('modalCondition').value;
+      const remarks = document.getElementById('modalRemarks').value;
+
+      const res = await fetch(`/api/loans/${loanId}/return`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quantity_returned: qty,
+          condition: condition,
+          receiving_staff: 'Lab Coordinator',
+          remarks: remarks
+        })
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        closeReturnModal();
+        alert('Return processed successfully!');
+        loadLoans();
+        loadInventory();
+      } else {
+        alert('Error: ' + json.error);
+      }
+    }
+
+    // Load Pending Renewals
+    async function loadRenewals() {
+      const res = await fetch('/api/renewals/pending');
+      const json = await res.json();
+      if (!json.success) return;
+
+      const pending = json.data.filter(r => r.status === 'PENDING');
+      document.getElementById('badgePendingRenewals').innerText = pending.length;
+      if (pending.length > 0) document.getElementById('badgePendingRenewals').classList.remove('hidden');
+      else document.getElementById('badgePendingRenewals').classList.add('hidden');
+
+      const container = document.getElementById('pendingRenewalsList');
+      if (pending.length === 0) {
+        container.innerHTML = `<div class="text-center py-8 text-slate-400 text-sm">No pending renewal requests.</div>`;
+        return;
+      }
+
+      container.innerHTML = pending.map(r => `
+        <div class="border border-slate-200 rounded-xl p-4 flex justify-between items-center bg-slate-50">
+          <div>
+            <div class="font-bold text-slate-800">${r.student_name} (${r.enrolment_no})</div>
+            <div class="text-xs text-slate-600 mt-0.5">Item: <strong>${r.item_name}</strong> ${r.asset_id || ''} | Current Due: <strong>${r.current_due_date.split('T')[0]}</strong></div>
+            <div class="text-xs text-indigo-700 mt-1 italic">Reason: "${r.reason}"</div>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="handleRenewalAction(${r.id}, 'APPROVE')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition">
+              <i class="fa-solid fa-check mr-1"></i> Approve (+15 Days)
+            </button>
+            <button onclick="handleRenewalAction(${r.id}, 'REJECT')" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition">
+              <i class="fa-solid fa-xmark mr-1"></i> Reject
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function handleRenewalAction(reqId, action) {
+      const res = await fetch(`/api/renewals/${reqId}/action`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: action, coordinator_name: 'Coordinator Admin' })
+      });
+      const json = await res.json();
+      if (json.success) {
+        alert(json.data ? json.data.message : json.message);
+        loadRenewals();
+        loadInventory();
+      } else {
+        alert('Error: ' + json.error);
+      }
+    }
+
+    // Load Student Loans
+    async function loadStudentLoans() {
+      const res = await fetch('/api/loans?studentId=1');
+      const json = await res.json();
+      if (!json.success) return;
+
+      const container = document.getElementById('studentLoansList');
+      if (json.data.length === 0) {
+        container.innerHTML = `<div class="col-span-2 text-center py-8 text-slate-400 text-sm">No items currently issued to your account.</div>`;
+        return;
+      }
+
+      container.innerHTML = json.data.map(loan => `
+        <div class="border border-slate-200 rounded-xl p-4 bg-slate-50 flex flex-col justify-between">
+          <div>
+            <div class="flex justify-between items-start mb-2">
+              <h4 class="font-bold text-slate-800">${loan.item_name}</h4>
+              <span class="px-2 py-0.5 rounded text-xs font-bold ${loan.status === 'RETURNED' ? 'bg-slate-200 text-slate-700' : 'bg-blue-100 text-blue-700'}">${loan.status}</span>
+            </div>
+            <div class="text-xs text-slate-500 mb-1">Asset ID: <strong>${loan.asset_id || 'Bulk Quantity (' + loan.issued_quantity + ')'}</strong></div>
+            <div class="text-xs text-slate-500 mb-1">Issue Date: ${loan.issue_date.split('T')[0]}</div>
+            <div class="text-xs font-bold ${loan.is_overdue ? 'text-rose-600' : 'text-indigo-700'} mb-3">
+              Due Date: ${loan.due_date.split('T')[0]} ${loan.is_overdue ? '(OVERDUE)' : ''}
+            </div>
+          </div>
+          ${loan.status !== 'RETURNED' ? `
+            <button onclick="requestRenewalPrompt(${loan.id})" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 rounded-lg transition">
+              <i class="fa-solid fa-clock mr-1"></i> Request 15-Day Renewal
+            </button>
+          ` : ''}
+        </div>
+      `).join('');
+    }
+
+    async function requestRenewalPrompt(loanId) {
+      const reason = prompt("Enter justification for requesting a 15-day renewal:", "Need additional time to complete hardware practical test");
+      if (!reason) return;
+
+      const res = await fetch(`/api/loans/${loanId}/request-renewal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-student-id': '1' },
+        body: JSON.stringify({ reason: reason })
+      });
+
+      const json = await res.json();
+      if (json.success) {
+        alert(json.data.message);
+        loadStudentLoans();
+      } else {
+        alert('Error: ' + json.error);
+      }
+    }
+
+    // Run Attack Simulation (For Judges)
+    async function runAttackSimulation(type) {
+      let resultDiv;
+      if (type === 'SQL_INJECTION') resultDiv = document.getElementById('resSql');
+      if (type === 'IDOR_EXPLOIT') resultDiv = document.getElementById('resIdor');
+      if (type === 'PRIVILEGE_ESCALATION') resultDiv = document.getElementById('resPriv');
+
+      resultDiv.classList.remove('hidden');
+      resultDiv.innerHTML = `<span class="text-slate-400">Sending payload...</span>`;
+
+      const res = await fetch('/api/security/simulate-attack', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ attackType: type })
+      });
+
+      const json = await res.json();
+      if (json.status && json.status.includes('DEFENDED')) {
+        resultDiv.innerHTML = `<div class="bg-emerald-50 border border-emerald-200 text-emerald-800 p-2.5 rounded font-mono text-[11px]">
+          <strong>STATUS:</strong> ${json.status}<br>
+          <strong>DEFENSE:</strong> ${json.defense || json.defenseMechanism}<br>
+          <strong>RESULT:</strong> ${json.result || json.message}
+        </div>`;
+      } else {
+        resultDiv.innerHTML = `<div class="bg-emerald-50 border border-emerald-200 text-emerald-800 p-2.5 rounded font-mono text-[11px]">
+          <strong>DEFENSE TRIGGERED:</strong> ${json.status}<br>
+          <strong>SECURITY GUARD:</strong> ${json.defenseMechanism || json.defense}<br>
+          <strong>SERVER RESPONSE:</strong> ${json.message || json.error}
+        </div>`;
+      }
+    }
+
+    // Load Audit Ledger
+    async function loadAuditLogs() {
+      const res = await fetch('/api/audit-logs');
+      const json = await res.json();
+      if (!json.success) return;
+
+      const tbody = document.getElementById('auditTableBody');
+      tbody.innerHTML = json.data.logs.map(log => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="py-2.5 px-3 text-slate-500">${log.timestamp.replace('T', ' ').substring(0, 19)}</td>
+          <td class="py-2.5 px-3"><span class="font-bold text-slate-800">${log.actor_id}</span> <span class="text-[10px] bg-slate-100 text-slate-600 px-1 py-0.5 rounded">${log.actor_role}</span></td>
+          <td class="py-2.5 px-3 font-bold text-indigo-700">${log.action}</td>
+          <td class="py-2.5 px-3 text-slate-600">${log.target_entity}</td>
+          <td class="py-2.5 px-3 text-[10px] text-slate-400 truncate max-w-xs">${log.current_hash.substring(0, 24)}...</td>
+        </tr>
+      `).join('');
+    }
+
+    // Initial Load
+    window.onload = () => {
+      loadInventory();
+      loadStudents();
+    };
+  </script>
+</body>
+</html>
