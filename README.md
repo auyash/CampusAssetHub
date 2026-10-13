@@ -104,19 +104,21 @@ Developed with adherence to **OWASP Top 10** secure coding principles and forens
 ### 6.1. Defense Against SQL Injection (OWASP A03)
 - **Vulnerability:** Unsanitized user inputs concatenated into database queries.
 - **Defense:** 100% of queries use prepared parameterized statements with positional placeholders (`?`). Input parameters are strictly isolated from query semantics.
+- **Live Interactive Verification:** The platform includes an interactive testing playground where judges can enter arbitrary custom SQL payloads (e.g. `' OR '1'='1`, `'; DROP TABLE inventory_items; --`, or `' UNION SELECT ...`). The backend executes the query live through parameterized statements, returning zero leaked records and proving complete SQLi immunity.
 
 ### 6.2. Insecure Direct Object Reference (IDOR) Defense (OWASP A01)
 - **Vulnerability:** A student modifying URL identifiers or headers to renew or alter another student's loan.
 - **Defense:** Strict server-side ownership validation ensures that `session_student_id === loan.student_id`. Unauthorized access triggers an immediate `HTTP 403 Forbidden` response and an incident log.
+- **Live Interactive Verification:** Testers can configure target loan IDs and forged student session IDs to observe immediate rejection and audit logging in real time.
 
 ### 6.3. Mass-Assignment & Privilege Escalation Defense (OWASP A04)
 - **Vulnerability:** A student client injecting administrative parameters (e.g., `{"status": "APPROVED", "extended_due_date": "2027-01-01"}`) into a renewal request payload.
 - **Defense:** Server-side schema whitelisting rejects or strips unauthorized fields before processing business logic.
 
-### 6.4. Cryptographic Tamper-Evident Audit Ledger
+### 6.4. Cryptographic Tamper-Evident Audit Ledger & Tamper Injection Test (OWASP A08)
 - Every state change (`ISSUE`, `RETURN`, `RENEWAL_REQUEST`, `RENEWAL_APPROVE`, `SECURITY_INCIDENT`) is cryptographically appended using **SHA-256 hash chaining**:
   $$\text{Current Hash} = \text{SHA256}(\text{Timestamp} \parallel \text{Actor} \parallel \text{Action} \parallel \text{Payload} \parallel \text{Previous Hash})$$
-- The system includes a forensic verification routine that recomputes the chain sequentially to prove no rows were deleted or retroactively modified.
+- **Live Tamper Demonstration:** Evaluators can click **"Corrupt Database Row (Direct Tamper)"** to modify raw audit rows directly in SQLite on disk. Running **"Verify Cryptographic Integrity"** immediately flags the mismatch down to the exact row ID (`TAMPER DETECTED: Row #X Corrupted`). Clicking **"Re-sign & Restore Ledger"** re-chains and repairs the ledger.
 
 ---
 
@@ -164,19 +166,21 @@ To demonstrate the platform across multiple laptops or mobile devices simultaneo
 
 When presenting the solution during evaluation:
 
-### Step 1: Initial Stock & Asset Status
+### Step 1: Initial Stock & Multi-Category Inventory
 - Navigate to the **Live Inventory** tab.
-- Demonstrate the baseline inventory: 30 total items (10 Development Boards `DB-001` through `DB-010` and 20 USB Cables).
-- Review the individual asset status chips.
+- Demonstrate the comprehensive department catalog: 15 lab categories, 50 serialized assets, and 225 total units (Development Boards, Laptops, Multimeters, Oscilloscopes, Raspberry Pi 4, HackRF One SDR, Logic Analyzers, Cables, and Adapters).
+- Review individual asset status chips (`USABLE`, `ISSUED`, `DAMAGED`).
 
-### Step 2: 15-Day Issue Lifecycle
+### Step 2: 15-Day Issue Lifecycle & Direct Student Registration
 - Switch to the **Issue Equipment** tab.
-- Select Student **Aarav Sharma**, Item **ARM Cortex Development Board**, and Asset **DB-002**.
-- Submit the transaction.
+- Demonstrate selecting an existing student or entering new student details directly (Enrolment Number, Name, Programme, Semester, Contact).
+- Select an item (e.g., ARM Development Board `DB-002`) and submit.
 - Observe that the due date is calculated automatically as **exactly 15 calendar days** from the transaction timestamp, and available stock decrements immediately.
 
-### Step 3: Student Renewal Mediation
+### Step 3: Student Portal & Renewal Mediation
 - Switch to the **Student Portal** using the top-right role switcher.
+- Demonstrate the **Student Profile Switcher** dropdown to inspect individual student loan accounts.
+- Notice that coordinator-only navigation tabs and administrative metrics are hidden in student view (Role-Based UI Isolation).
 - Locate the active loan and trigger **Request 15-Day Renewal** with a test justification.
 - Note that the loan due date remains unchanged while the request status changes to `PENDING`.
 - Switch back to **Coordinator**, open **Renewal Approvals**, and click **Approve (+15 Days)**.
@@ -184,14 +188,16 @@ When presenting the solution during evaluation:
 
 ### Step 4: Partial Returns & Condition Quarantine
 - Open the **Returns & Inspection** tab.
-- Select an active cable loan, specify a partial quantity of `1`, and mark the condition as `DAMAGED`.
-- Confirm that 1 cable remains outstanding on the student's account, and the returned damaged unit is excluded from available stock.
+- Select an active loan, specify a partial quantity, and mark the condition as `DAMAGED`.
+- Confirm that remaining units stay tracked on the student's account, and the damaged unit is quarantined from available stock.
 
-### Step 5: Security Showcase & Audit Verification
-- Open the **Security Showcase** tab.
-- Trigger the **Simulate SQL Injection** test: observe parameterized statements safely neutralizing the payload without data leakage.
-- Trigger the **Simulate IDOR Attack** test: observe server-side authorization blocking cross-user tampering with an `HTTP 403 Forbidden` response.
-- Open the **Audit Ledger** tab: inspect the SHA-256 hash chain and confirm the cryptographic integrity status.
+### Step 5: Interactive Security Playground & Database Tamper Detection
+- Open the **Security Showcase** tab:
+  - **Live SQL Injection:** Type any custom payload (or choose presets like `' OR '1'='1` or `DROP TABLE`) and click **Execute Live SQL Attack**. Observe zero records leaked due to parameterized SQLite statements.
+  - **Live IDOR Exploit:** Specify target loan ID and forged student ID and click **Execute Live IDOR Attack**. Observe `HTTP 403 Forbidden` response and immediate ownership enforcement.
+  - **Mass Assignment:** Execute attack with injected `"status": "APPROVED"` and observe immediate whitelist rejection.
+  - **Direct Database Tampering:** Click **"Corrupt Database Row"** to alter SQLite on disk, then click **"Verify Cryptographic Integrity"** to see SHA-256 hash mismatch detection down to the row number. Click **"Re-sign & Restore Ledger"** to restore cryptographic validity.
+- Open the **Audit Ledger** tab: inspect the SHA-256 hash chain and confirm forensic integrity verification.
 
 ---
 

@@ -148,32 +148,31 @@ CampusAssetHub implements proactive defensive coding patterns addressing the **O
 
 *(Execute this sequence during live evaluation at `http://localhost:4000/`)*
 
-### ⏱️ Phase 1: Baseline Inventory Overview (30 Seconds)
+### ⏱️ Phase 1: Multi-Category Inventory & Asset Overview (30 Seconds)
 1. Open the **Live Inventory** tab.
-2. Present the operational summary metrics: **30 Total Items**, **10 Tracked Development Boards**, and **20 Bulk USB Cables**.
-3. Point out the visual status grid displaying individual assets `DB-001` through `DB-010`.
+2. Present the operational summary metrics: **225 Total Physical Units** across **15 Department Categories**, with **50 Serialized Assets** (`DB-001..014`, `LP-001..005`, `MM-001..004`, `OSC-001..004`, `RPI`, `WB`, `SDR`, `LA`) and bulk accessories.
+3. Highlight the visual status chips (`USABLE`, `ISSUED`, `DAMAGED`) and show the search/filter responsiveness across categories.
 
-### ⏱️ Phase 2: Equipment Issuance & 15-Day Rule (30 Seconds)
+### ⏱️ Phase 2: Equipment Issuance, Dual Identification & 15-Day Rule (30 Seconds)
 1. Navigate to the **Issue Equipment** tab.
-2. Select:
-   - **Student:** `Aarav Sharma (NFSU2026DFIS001)`
-   - **Item:** `ARM Cortex Development Board`
-   - **Asset ID:** `DB-002` (or any available unit)
-   - **Purpose:** `Hardware Security Practical`
-3. Click **Issue Equipment & Record Transaction**.
-4. **Highlight to the panel:**
+2. Demonstrate the flexible identification options:
+   - Select an existing student from the dropdown, **OR**
+   - Click "Register & Issue to New Student" and show direct input fields (Enrolment Number, Full Name, Academic Programme, Semester, Mobile).
+3. Select an item (e.g., `ARM Cortex Development Board`, Asset `DB-002`) and enter purpose `Hardware Security Practical`.
+4. Click **Issue Equipment & Record Transaction**.
+5. **Highlight to the panel:**
    - The confirmation alert demonstrates that the due date was computed automatically as **exactly 15 calendar days** from the transaction date.
-   - Available Development Boards automatically decrement from 10 to 9.
+   - Available Development Boards automatically decrement by the requested quantity.
 
-### ⏱️ Phase 3: Student Renewal Mediation & Approval (30 Seconds)
+### ⏱️ Phase 3: Student Portal, Profile Switcher & Renewal Mediation (30 Seconds)
 1. In the top-right header, toggle to **Student Portal**.
-2. Note that the portal displays Student Aarav Sharma's active loan with dynamic countdown badges.
-3. Click **Request 15-Day Renewal**, input a justification (`Extending hardware testing verification`), and submit.
-4. **Key Policy Demonstration:**
+2. **Demonstrate Role-Based UI Isolation:** Coordinator-only tabs (Live Inventory, Issue Desk, Returns, Renewal Approvals, Audit Ledger) and stock summary counters are hidden in student view.
+3. **Demonstrate Dynamic Student Profile Switcher:** Use the dropdown to switch between registered students (e.g., *Aarav Sharma, Diya Patel, Rohan Mehta*) and show how active loans and metadata update immediately.
+4. On an active loan, click **Request 15-Day Renewal**, input a justification (`Extending hardware testing verification`), and submit.
+5. **Key Policy Demonstration:**
    - Direct the panel's attention to the loan due date: **it remains unchanged**. The request status reflects `PENDING` coordinator review.
-5. In the top header, switch back to **Coordinator (Admin)**.
-6. Open the **Renewal Approvals** tab.
-7. Click **Approve (+15 Days)**.
+6. In the top header, switch back to **Coordinator (Admin)**.
+7. Open the **Renewal Approvals** tab and click **Approve (+15 Days)**.
 8. Confirm that the due date is extended by exactly 15 calendar days from the previous deadline.
 
 ### ⏱️ Phase 4: Partial Return & Condition Inspection (30 Seconds)
@@ -183,16 +182,23 @@ CampusAssetHub implements proactive defensive coding patterns addressing the **O
    - Returning as `USABLE` restores available stock immediately.
    - Returning as `DAMAGED` or `MAINTENANCE` quarantines the unit without incrementing available stock.
 
-### ⏱️ Phase 5: Live Security Showcase (45 Seconds)
-1. Open the green **Security Showcase** tab.
-2. Click **Simulate SQL Injection**:
-   - The server processes payload `' OR '1'='1` using parameterized queries, safely returning 0 records and preventing data exposure.
-3. Click **Simulate IDOR Attack**:
-   - The server detects an unauthorized cross-user modification attempt and terminates the request with `HTTP 403 Forbidden`.
-4. Click **Simulate Mass Assignment**:
-   - The server rejects an injected `"status": "APPROVED"` payload, preventing privilege escalation.
-5. Navigate to the **Audit Ledger** tab:
-   - Present the **SHA-256 Chained Hash** column and the green cryptographic integrity verification badge.
+### ⏱️ Phase 5: Live Interactive Security Playground & Database Tamper Test (60 Seconds)
+1. Open the **Security Showcase** tab:
+   - **Interactive Live SQL Injection:**
+     - Point out the custom payload field. Invite the judges to specify any SQL injection string (or click presets: `' OR '1'='1`, `'; DROP TABLE inventory_items; --`, or `UNION SELECT`).
+     - Click **Execute Live SQL Attack**. The server safely runs the query using parameterized placeholders (`?`), proving 0 records are leaked from the database.
+   - **Live IDOR Exploit Test:**
+     - Point out the target loan ID (`1`) and forged student ID (`2`).
+     - Click **Execute Live IDOR Attack**. The server verifies session ownership against loan records and blocks unauthorized access with `HTTP 403 Forbidden`.
+   - **Mass Assignment Privilege Escalation:**
+     - Point out the student renewal payload containing injected `"status": "APPROVED"`.
+     - Click **Execute Mass Assignment Attack**. The server detects the unauthorized administrative attribute and rejects it with `HTTP 400 Bad Request`.
+   - **💥 Direct Database Tamper & SHA-256 Hash-Chain Verification:**
+     - Click **"1. Corrupt Database Row (Direct Tamper)"**: Modifies raw audit log strings directly inside the SQLite database file on disk, bypassing API validation.
+     - Click **"2. Verify Cryptographic Integrity"**: The backend sequentially recomputes SHA-256 hashes across the chain. The status badge immediately pulses red: `TAMPER DETECTED: Corrupted at Row #X`.
+     - Click **"3. Re-sign & Restore Ledger"**: Cryptographic hashes are safely recalculated, restoring the verified green audit chain.
+2. Navigate to the **Audit Ledger** tab:
+   - Show the live transaction history with cryptographic parent hash chaining.
 
 ---
 
@@ -208,7 +214,10 @@ CampusAssetHub implements proactive defensive coding patterns addressing the **O
 > **Answer:** *"State validation is enforced entirely server-side. Submitting a renewal request simply inserts a record into the `renewal_requests` table with status `PENDING`. The loan table's `due_date` column remains untouched until an authenticated Coordinator endpoint processes the request."*
 
 ### Q4: "How does your SHA-256 audit ledger prove records have not been tampered with?"
-> **Answer:** *"It operates as a cryptographic hash chain. Each log entry concatenates the timestamp, actor, action, payload, and the SHA-256 hash of the PRECEDING row. If an attacker directly alters a record in the database file, re-running our verification routine detects a hash mismatch at the modified row, immediately exposing the tampering."*
+> **Answer:** *"It operates as a cryptographic hash chain. Each log entry concatenates the timestamp, actor, action, payload, and the SHA-256 hash of the PRECEDING row. If an attacker directly alters a record in the database file, re-running our verification routine detects a hash mismatch at the modified row, immediately exposing the tampering down to the exact row ID."*
+
+### Q5: "Is your security demonstration simulated or running against real code?"
+> **Answer:** *"It is 100% real and interactive. When you type a SQL payload or test an IDOR request, an actual HTTP request hits our Python backend, which executes real SQLite queries using parameterized bindings and ownership checks. In our database tampering demo, we actually modify physical bytes in the SQLite database file and prove that our SHA-256 validation algorithm detects the discrepancy immediately."*
 
 ---
 
