@@ -210,6 +210,20 @@ CampusAssetHub implements proactive defensive coding patterns addressing the **O
 2. Navigate to the **Audit Ledger** tab:
    - Show the live transaction history with cryptographic parent hash chaining.
 
+### ⏱️ Phase 6: Circulation & Custody Reports (15-Day Lab Audit & CSV Export) (30 Seconds)
+1. Click the **Circulation Reports (15-Day)** tab in the Coordinator navigation:
+   - **KPI Summary Cards:** Direct the panel's attention to the live aggregate metrics: Total Transactions, Total Units Issued, Total Units Returned, Units Outstanding, Overdue Loans, and Quarantined Units.
+   - **Timeframe Filtering:** Point out the default **Last 15 Calendar Days** policy filter (matching the 15-day return rule). Show the 1-click toggles for Last 7 Days, Last 30 Days, and All-Time history.
+   - **Item-Wise & Student-Wise Custody Ledger:** Point out the detailed rows showing:
+     - Equipment Name & Asset ID
+     - Borrower details (Full Name, Enrolment Number, Academic Programme)
+     - Issuing coordinator & precise Issue Date
+     - Mandatory Due Date & Active Circulation Status
+     - Complete Return Chain: Return Date, Returned Quantity, Receiving Coordinator, Physical Condition (`USABLE`, `DAMAGED`, `MAINTENANCE`), and Remarks.
+   - **Department Export & Print Filing:**
+     - Click **Export to CSV** to instantly download the complete custody log formatted for laboratory record audits.
+     - Click **Print Report** to trigger a clean, printer-optimized audit summary for departmental compliance filings.
+
 ---
 
 ## 7. Comprehensive Evaluation Q&A Defense Strategy
@@ -228,6 +242,9 @@ CampusAssetHub implements proactive defensive coding patterns addressing the **O
 
 ### Q5: "Is your security demonstration simulated or running against real code?"
 > **Answer:** *"It is 100% real and interactive. When you type a SQL payload or test an IDOR request, an actual HTTP request hits our Python backend, which executes real SQLite queries using parameterized bindings and ownership checks. In our database tampering demo, we actually modify physical bytes in the SQLite database file and prove that our SHA-256 validation algorithm detects the discrepancy immediately."*
+
+### Q6: "How do you track who borrowed what and who returned what over the past 15 days?"
+> **Answer:** *"We built a dedicated 'Circulation Reports' module that queries the relational custody chain across loans and returns. By default, it filters for transactions within the mandatory 15-day policy window, attributing each equipment unit to the borrowing student, the issuing staff member, the return timestamp, the receiving staff member, physical inspection condition, and outstanding quantities, with 1-click CSV export and print filing."*
 
 ---
 

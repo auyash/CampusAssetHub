@@ -502,6 +502,151 @@ class SecureInventoryHandler(http.server.BaseHTTPRequestHandler):
                 policies = [dict(row) for row in cursor.fetchall()]
                 self._send_json(200, {"success": True, "data": policies})
 
+            # 7. GET /api/reports/circulation (Full Circulation & Custody Report, Date-wise & 15-Day History)
+            elif path == "/api/reports/circulation":
+                days_param = params.get("days", ["15"])[0]
+                status_filter = params.get("status", [None])[0]
+                search_query = params.get("search", [None])[0]
+
+                where_clauses = ["1=1"]
+                args = []
+
+                if days_param and days_param != "all":
+                    try:
+                        d = int(days_param)
+                        where_clauses.append("((julianday('now') - julianday(l.issue_date) <= ?) OR EXISTS (SELECT 1 FROM returns r WHERE r.loan_id = l.id AND julianday('now') - julianday(r.return_date) <= ?))")
+                        args.extend([d, d])
+                    except ValueError:
+                        pass
+
+                if status_filter and status_filter != "ALL":
+                    if status_filter == "OVERDUE":
+                        where_clauses.append("(l.status IN ('ACTIVE', 'RENEWED', 'PARTIALLY_RETURNED') AND l.due_date < datetime('now'))")
+                    elif status_filter == "OUTSTANDING":
+                        where_clauses.append("(l.status IN ('ACTIVE', 'RENEWED', 'PARTIALLY_RETURNED'))")
+                    elif status_filter == "RETURNED":
+                        where_clauses.append("l.status = 'RETURNED'")
+
+                if search_query:
+                    where_clauses.append("(s.name LIKE ? OR s.enrolment_no LIKE ? OR i.item_name LIKE ? OR l.asset_id LIKE ? OR s.programme LIKE ?)")
+                    s_arg = f"%{search_query}%"
+                    args.extend([s_arg, s_arg, s_arg, s_arg, s_arg])
+
+                query = f"""
+                    SELECT 
+                        l.id as loan_id,
+                        l.issue_date,
+                        l.due_date,
+                        l.issued_quantity,
+                        l.returned_quantity,
+                        (l.issued_quantity - l.returned_quantity) as outstanding_quantity,
+                        l.purpose,
+                        l.status as loan_status,
+                        l.issuing_staff,
+                        CASE 
+                            WHEN (l.status IN ('ACTIVE', 'RENEWED', 'PARTIALLY_RETURNED') AND l.due_date < datetime('now'))
+                            THEN 1 ELSE 0 
+                        END as is_overdue,
+                        CASE 
+                            WHEN (l.status IN ('ACTIVE', 'RENEWED', 'PARTIALLY_RETURNED') AND l.due_date < datetime('now'))
+                            THEN CAST((julianday('now') - julianday(l.due_date)) AS INTEGER)
+                            ELSE 0 
+                        END as overdue_days,
+                        s.id as student_id,
+                        s.name as student_name,
+                        s.enrolment_no,
+                        s.programme,
+                        s.semester,
+                        s.email,
+                        s.contact_no,
+                        i.id as item_id,
+                        i.item_code,
+                        i.item_name,
+                        i.category,
+                        i.storage_location,
+                        l.asset_id,
+                        (
+                            SELECT json_group_array(json_object(
+                                'return_id', r.id,
+                                'return_date', r.return_date,
+                                'quantity_returned', r.quantity_returned,
+                                'condition_on_return', r.condition_on_return,
+                                'receiving_staff', r.receiving_staff,
+                                'remarks', r.remarks
+                            ))
+                            FROM returns r
+                            WHERE r.loan_id = l.id
+                        ) as returns_json
+                    FROM loans l
+                    JOIN students s ON l.student_id = s.id
+                    JOIN inventory_items i ON l.item_id = i.id
+                    WHERE {' AND '.join(where_clauses)}
+                    ORDER BY l.id DESC
+                """
+                cursor.execute(query, args)
+                raw_records = cursor.fetchall()
+
+                records = []
+                total_issued = 0
+                total_returned = 0
+                total_outstanding = 0
+                overdue_count = 0
+                damaged_lost_count = 0
+
+                for r in raw_records:
+                    rec = dict(r)
+                    returns_list = []
+                    if rec.get("returns_json"):
+                        try:
+                            returns_list = json.loads(rec["returns_json"])
+                        except Exception:
+                            returns_list = []
+                    
+                    # enrich return dates
+                    for ret in returns_list:
+                        try:
+                            rdt = datetime.datetime.fromisoformat(ret["return_date"].replace(" ", "T"))
+                            ret["local_return_date"] = rdt.astimezone().strftime("%Y-%m-%d %I:%M %p")
+                        except Exception:
+                            ret["local_return_date"] = ret.get("return_date")
+                        if ret.get("condition_on_return") in ("DAMAGED", "LOST", "MAINTENANCE"):
+                            damaged_lost_count += ret.get("quantity_returned", 1)
+
+                    rec["returns"] = returns_list
+                    del rec["returns_json"]
+
+                    try:
+                        dt = datetime.datetime.fromisoformat(rec["issue_date"])
+                        rec["local_issue_date"] = dt.astimezone().strftime("%Y-%m-%d %I:%M %p")
+                    except Exception:
+                        rec["local_issue_date"] = rec["issue_date"]
+
+                    try:
+                        due_dt = datetime.datetime.fromisoformat(rec["due_date"])
+                        rec["local_due_date"] = due_dt.astimezone().strftime("%Y-%m-%d")
+                    except Exception:
+                        rec["local_due_date"] = rec["due_date"][:10]
+
+                    total_issued += rec["issued_quantity"]
+                    total_returned += rec["returned_quantity"]
+                    total_outstanding += rec["outstanding_quantity"]
+                    if rec["is_overdue"]:
+                        overdue_count += 1
+
+                    records.append(rec)
+
+                summary = {
+                    "total_transactions": len(records),
+                    "total_units_issued": total_issued,
+                    "total_units_returned": total_returned,
+                    "total_units_outstanding": total_outstanding,
+                    "overdue_loans_count": overdue_count,
+                    "quarantined_units_count": damaged_lost_count,
+                    "timeframe_days": days_param
+                }
+
+                self._send_json(200, {"success": True, "data": {"summary": summary, "records": records}})
+
             elif path == "/health":
                 self._send_json(200, {"status": "HEALTHY", "time": datetime.datetime.now().isoformat()})
 

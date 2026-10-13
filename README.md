@@ -96,9 +96,17 @@ The project was engineered with a strict 3-tier division of labor across team me
 
 ### 5.2. Student Self-Service Portal & Profile Switcher
 - **Dynamic Student Profile Switcher & Multi-Programme Support:** Dropdown allowing switching between registered students across diverse academic programmes (e.g. *B.Tech. CSE, B.Tech. Cyber Security, M.Sc. DFIS, M.Tech. CS*). Selecting or adding a student instantly updates the top navigation subtitle, profile badge, semester tags, and programme metadata across the entire portal.
-- **Role-Based UI Isolation:** In Student Portal mode, coordinator-only navigation tabs (Live Inventory, Issue Desk, Returns, Renewal Approvals, Audit Ledger) and stock summary metrics are hidden to present a clean, isolated student interface.
+- **Role-Based UI Isolation:** In Student Portal mode, coordinator-only navigation tabs (Live Inventory, Issue Desk, Returns, Renewal Approvals, Audit Ledger, Circulation Reports) and stock summary metrics are hidden to present a clean, isolated student interface.
 - **Active Loans View:** Color-coded card listing all borrowed items with exact return dates and active countdown badges.
 - **Renewal Request Flow:** Modal allowing students to submit renewal justifications, correctly maintaining `PENDING` status until authorized.
+
+### 5.3. Circulation & Custody Reports (15-Day History & Audit Export)
+- **Dedicated Circulation Dashboard:** Dedicated navigation tab providing comprehensive custody reporting of every hardware item borrowed and returned across department laboratories.
+- **Configurable Timeframe Filtering:** Defaults to the mandatory **Last 15 Calendar Days** window, with quick toggles for Last 7 Days, Last 30 Days, or Complete All-Time custody history.
+- **Complete Chain of Custody Detail:** Reports exact loan ID, equipment name, asset category/SKU, student borrower (Name, Enrolment, Programme), issue date, due date, issuing coordinator, return event timestamp, returned quantity, receiving coordinator, physical condition, remarks, and outstanding balance.
+- **Real-Time Circulation KPIs:** Interactive summary metric cards for Total Transactions, Total Units Issued, Total Units Returned, Units Outstanding, Overdue Loans, and Quarantined Units.
+- **Export & Official Print Filing:** 1-click **Export to CSV** for administrative spreadsheets and a dedicated **Print Report** view styled for lab audits and department inspections.
+
 
 ---
 
