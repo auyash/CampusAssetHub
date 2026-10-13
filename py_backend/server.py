@@ -11,10 +11,14 @@ import sqlite3
 import hashlib
 import datetime
 import re
+import os
+import sys
 from urllib.parse import urlparse, parse_qs
 
-PORT = 4000
-DB_FILE = "inventory.db"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PORT = int(os.environ.get("PORT", 4000))
+DB_FILE = os.path.join(BASE_DIR, "inventory.db")
+
 
 # =====================================================================
 # 1. DATABASE SCHEMA & SEED DATA INITIALIZATION

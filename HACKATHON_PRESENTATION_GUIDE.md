@@ -3,7 +3,12 @@
 **Audience:** Evaluation Panel, Presenters, and Core Technical Team  
 **Problem Statement:** Problem Statement #5 (Department Inventory & Student Item Issue Management)  
 **Host Institution Context:** National Forensic Sciences University (NFSU)  
-**Live Application URL:** `http://localhost:4000/`
+**Evaluation Access Options:**
+- **Campus Network (NFSU Wi-Fi):** `http://172.19.4.85:4000/`
+- **Localhost / Standalone:** `http://localhost:4000/`
+- **Cloud 24/7 Hosting (Render/Railway):** Connects directly to GitHub (`auyash/CampusAssetHub`) via included `render.yaml` & `Procfile`
+- **1-Command Zero-Dependency Run (Any Machine):** `git clone https://github.com/auyash/CampusAssetHub.git && cd CampusAssetHub && python py_backend/server.py`
+
 
 ---
 
@@ -250,22 +255,34 @@ CampusAssetHub implements proactive defensive coding patterns addressing the **O
 
 ## 8. System Operations & Network Deployment
 
-### Starting / Restarting the Application
-1. Open a terminal in the project directory:
-   ```bash
-   cd py_backend
-   python server.py
-   ```
-2. Navigate in browser to:
-   ```
-   http://localhost:4000/
-   ```
+### Evaluation Method A: 24/7 Free Cloud Hosting (Render / Railway)
+Evaluators can access the live system at any time from anywhere in the world without requiring the presenter's laptop to stay powered on:
+1. The repository includes pre-configured [`render.yaml`](file:///D:/New%20folder/OneDrive/Documents/GitHub/CampusAssetHub/render.yaml) and [`Procfile`](file:///D:/New%20folder/OneDrive/Documents/GitHub/CampusAssetHub/Procfile).
+2. Connect the GitHub repo (`auyash/CampusAssetHub`) to [Render.com](https://render.com) (New Web Service -> Free Plan).
+3. The server starts automatically and provides a permanent public HTTPS URL (e.g., `https://campusassethub.onrender.com/`).
 
-### Multi-Device Local Network Deployment
-To run a live collaborative demo with different laptops (e.g., Coordinator on Laptop A, Student on Laptop B):
-1. Connect all demonstration devices to the same local Wi-Fi or mobile hotspot.
-2. Identify the host machine's IPv4 address via `ipconfig` (Windows) or `ifconfig` (macOS/Linux).
-3. Access the application on secondary devices:
+### Evaluation Method B: Campus Network (NFSU Wi-Fi / Local Area Network)
+To access or evaluate across devices on the departmental or campus Wi-Fi without internet hosting:
+1. Connect to the university Wi-Fi (`nfsu-guest`) or mobile hotspot.
+2. The host server is actively bound to all network interfaces (`0.0.0.0:4000`):
    ```
-   http://<HOST_IP_ADDRESS>:4000/
+   http://172.19.4.85:4000/
    ```
+3. Evaluators on any laptop, tablet, or phone on the same network can navigate directly to `http://172.19.4.85:4000/`.
+
+### Evaluation Method C: 1-Command Offline Local Evaluation (Any OS)
+Because CampusAssetHub is built with the Python 3 Standard Library, evaluators can run the entire system on their own machine with **zero package installations**:
+```bash
+git clone https://github.com/auyash/CampusAssetHub.git
+cd CampusAssetHub
+python py_backend/server.py
+```
+Open `http://localhost:4000/` or `http://127.0.0.1:4000/` in any modern web browser.
+
+### Evaluation Method D: Docker Container Run
+```bash
+docker build -t campusassethub .
+docker run -p 4000:4000 campusassethub
+```
+Navigate to `http://localhost:4000/`.
+

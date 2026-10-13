@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: campusassethub
+    runtime: python
+    buildCommand: echo "Zero dependency standard library build complete."
+    startCommand: python py_backend/server.py
+    plan: free

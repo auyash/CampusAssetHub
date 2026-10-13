@@ -141,36 +141,42 @@ Developed with adherence to **OWASP Top 10** secure coding principles and forens
 - Modern web browser (Chrome, Edge, Firefox, Safari).
 - Zero external package installations required (uses Python standard libraries).
 
-### Running the Application
+### Running the Application (Localhost or Standalone)
 1. Open a terminal in the project root:
    ```bash
    cd py_backend
-   ```
-2. Launch the application server:
-   ```bash
    python server.py
    ```
-3. Open your browser and navigate to:
+2. Open your browser and navigate to:
    ```
    http://localhost:4000/
    ```
 
+### 24/7 Cloud Deployment (Render / Railway)
+For evaluators reviewing asynchronously without running local processes:
+- Pre-configured [`render.yaml`](file:///D:/New%20folder/OneDrive/Documents/GitHub/CampusAssetHub/render.yaml) and [`Procfile`](file:///D:/New%20folder/OneDrive/Documents/GitHub/CampusAssetHub/Procfile) are included in the repository.
+- Connect the GitHub repository ([`https://github.com/auyash/CampusAssetHub`](https://github.com/auyash/CampusAssetHub)) to [Render.com](https://render.com) as a Web Service.
+- Render automatically detects Python and launches the service with a public URL (e.g. `https://campusassethub.onrender.com/`).
+
+### Docker Container Run
+```bash
+docker build -t campusassethub .
+docker run -p 4000:4000 campusassethub
+```
+
 ---
 
-## 8. Multi-Device Local Network Setup
-To demonstrate the platform across multiple laptops or mobile devices simultaneously (e.g., Coordinator on one laptop, Student on another):
+## 8. Multi-Device Local & Campus Network Setup
+To demonstrate or evaluate the platform across different laptops, tablets, or phones simultaneously (e.g., Coordinator on Laptop A, Student on Laptop B):
 
-1. Connect all demonstration devices to the same local Wi-Fi or mobile hotspot.
-2. Identify the host machine's IPv4 address:
-   ```bash
-   ipconfig   # On Windows
-   ifconfig   # On macOS/Linux
+1. Connect devices to the same local Wi-Fi (such as `nfsu-guest`) or mobile hotspot.
+2. The server binds to all interfaces (`0.0.0.0:4000`).
+3. Open the browser on any connected device and navigate to:
    ```
-3. Open the browser on secondary devices and navigate to:
+   http://172.19.4.85:4000/
    ```
-   http://<HOST_IP_ADDRESS>:4000/
-   ```
-   *(Example: `http://172.19.4.85:4000/` or `http://192.168.137.1:4000/`)*
+   *(Or your machine's local IPv4: `http://<HOST_IP_ADDRESS>:4000/`)*
+
 
 ---
 
